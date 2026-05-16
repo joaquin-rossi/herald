@@ -1,0 +1,42 @@
+cabal-version:      3.0
+name:               herald
+version:            0.1.0.0
+license:            AGPL-3.0-or-later
+license-file:       LICENSE
+author:             Joaquín Rossi
+maintainer:         joaquin@joaquinrossi.net
+category:           Sound
+build-type:         Simple
+
+common warnings
+    ghc-options: -Wall
+
+library
+    import: warnings
+
+    exposed-modules:
+        Herald.Music,
+        Herald.Sound,
+        Herald.Sound.IO
+
+    hs-source-dirs:   src
+    default-language: GHC2024
+    build-depends:
+        base ^>=4.20.2.0,
+        bytestring ^>=0.12.2.0,
+        mtl ^>=2.3.2,
+        process ^>=1.6.26.1,
+
+executable herald
+    import: warnings
+
+    main-is: Main.hs
+
+    hs-source-dirs:   app
+    default-language: GHC2024
+    build-depends:
+        base ^>=4.20.2.0,
+        bytestring ^>=0.12.2.0,
+        herald,
+        mtl ^>=2.3.2,
+        process ^>=1.6.26.1,

@@ -28,9 +28,16 @@ freq hz duration = zipWith3 (\x y z -> x * y * z) release attack output
     output :: Sound
     output = map sin $ map (* step) [0.0 .. sampleRate * duration]
 
+harmonics :: Hz -> [Hz]
+harmonics f = (* f) <$> [1 ..]
+
+inharmonics :: Float -> Hz -> [Hz]
+inharmonics b f = zipWith stretch [1 ..] (harmonics f)
+  where
+    stretch n h = h * sqrt (1 + b * n ** 2)
+
 mixPulse :: [Pulse] -> Float
-mixPulse [] = 0
-mixPulse xs = sum xs / fromIntegral (length xs)
+mixPulse = sum
 
 mixSound :: [Sound] -> Sound
 mixSound xs

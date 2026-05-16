@@ -8,17 +8,18 @@ type Semitones = Float
 
 type Beats = Float
 
-rest :: Seconds -> Beats -> Sound
-rest bd b = silence (b * bd)
+noteFreq :: Semitones -> Hz
+noteFreq n = 440.0 * (2 ** (1.0 / 12.0)) ** n
 
-note :: Seconds -> Semitones -> Beats -> Sound
-note bd n b = freq f (b * bd)
+note :: Semitones -> Seconds -> Sound
+note n t = mixSound [(a *) <$> freq f t | (f, a) <- ws]
   where
-    f :: Hz
-    f = 440.0 * (2 ** (1.0 / 12.0)) ** n
+    fs = inharmonics 0.001 (noteFreq n)
+    as = iterate (* 0.5) (1.0 :: Float)
+    ws = take 5 $ zip fs as
 
-chord :: Seconds -> [Semitones] -> Beats -> Sound
-chord bd ns b = mixSound [note bd n b | n <- ns]
+chord :: [Semitones] -> Seconds -> Sound
+chord ns t = mixSound [note n t | n <- ns]
 
 -- Score
 
@@ -50,14 +51,19 @@ askBeatDuration = (60.0 /) <$> askBpm
 tellRest :: (Score m) => Beats -> m ()
 tellRest b = do
   bd <- askBeatDuration
-  tell $ rest bd b
+  tell $ silence (b * bd)
 
 tellNote :: (Score m) => Semitones -> Beats -> m ()
 tellNote n b = do
   bd <- askBeatDuration
-  tell $ note bd n b
+  tell $ note n (b * bd)
 
 tellChord :: (Score m) => [Semitones] -> Beats -> m ()
 tellChord ns b = do
   bd <- askBeatDuration
-  tell $ chord bd ns b
+  tell $ chord ns (b * bd)
+
+together :: [ScoreT ()] -> ScoreT ()
+together scores = do
+  env <- ask
+  tell $ mixSound [runScore env s | s <- scores]

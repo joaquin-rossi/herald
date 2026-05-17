@@ -12,21 +12,12 @@ sampleRate :: Float
 sampleRate = 48000.0
 
 silence :: Seconds -> Sound
-silence = freq 0
+silence t = 0 <$ [0.0 .. sampleRate * t]
 
 freq :: Hz -> Seconds -> Sound
-freq hz duration = zipWith3 (\x y z -> x * y * z) release attack output
+freq f t = sin <$> (* step) <$> [0.0 .. sampleRate * t]
   where
-    step = (hz * 2 * pi) / sampleRate
-
-    attack :: Sound
-    attack = map (min 1.0) [0.0, 0.001 ..]
-
-    release :: Sound
-    release = reverse $ take (length output) attack
-
-    output :: Sound
-    output = map sin $ map (* step) [0.0 .. sampleRate * duration]
+    step = (f * 2 * pi) / sampleRate
 
 harmonics :: Hz -> [Hz]
 harmonics f = (* f) <$> [1 ..]
@@ -43,11 +34,10 @@ mixSound :: [Sound] -> Sound
 mixSound xs
   | all null xs = []
   | otherwise =
-      mixPulse (map headOr0 xs)
-        : mixSound (map drop1 xs)
+      mixPulse (headOr0 <$> xs)
+        : mixSound (drop1 <$> xs)
   where
     headOr0 [] = 0
     headOr0 (y : _) = y
-
     drop1 [] = []
     drop1 (_ : ys) = ys

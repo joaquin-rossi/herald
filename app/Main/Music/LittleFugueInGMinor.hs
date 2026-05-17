@@ -4,7 +4,7 @@ import Herald.Music
 import Herald.Sound
 
 songLittleFugueInGMinor :: Sound
-songLittleFugueInGMinor = (* 0.25) <$> runScore (ScoreEnv {bpm = 144}) score
+songLittleFugueInGMinor = (* 0.25) <$> playScore (ScoreEnv {bpm = 144}) score
   where
     score = together [scoreLittleFugueInGMinor1, scoreLittleFugueInGMinor2]
 
@@ -114,6 +114,59 @@ scoreLittleFugueInGMinor1 = do
   tellNote 12 0.25
   tellNote 10 0.25
   tellNote 12 0.25
+  --
+  tellNote 8 0.25
+  tellNote 5 0.25
+  tellNote 4 0.25
+  tellNote 5 0.25
+  tellNote 10 0.25
+  tellNote 5 0.25
+  tellNote 4 0.25
+  tellNote 5 0.25
+  tellNote 12 0.25
+  tellNote 5 0.25
+  tellNote 4 0.25
+  tellNote 5 0.25
+  tellNote 10 0.25
+  tellNote 5 0.25
+  tellNote 4 0.25
+  tellNote 5 0.25
+  --
+  tellNote 0 0.5
+  tellNote 8 0.5
+  tellNote (-2) 0.5
+  tellNote 7 0.5
+  tellNote (-4) 0.5
+  tellNote 0 0.5
+  tellNote 5 0.5
+  tellNote 8 0.5
+  --
+  tellNote 6 0.5
+  tellNote 12 0.5
+  tellRest 0.5
+  tellNote 6 0.5
+  tellNote 5 0.5
+  tellNote 10 0.5
+  tellRest 0.5
+  tellNote 5 0.5
+  --
+  tellNote 3 0.25
+  tellNote 1 0.25
+  tellNote 3 0.25
+  tellNote 5 0.25
+  tellNote 3 0.25
+  tellNote 12 0.25
+  tellNote 10 0.25
+  tellNote 12 0.25
+  tellNote 1 0.25
+  tellNote 10 0.25
+  tellNote 9 0.25
+  tellNote 10 0.25
+  tellNote 0 0.25
+  tellNote 9 0.25
+  tellNote 7 0.25
+  tellNote 9 0.25
+  --
 
 scoreLittleFugueInGMinor2 :: (Score m) => m ()
 scoreLittleFugueInGMinor2 = do
@@ -149,3 +202,59 @@ scoreLittleFugueInGMinor2 = do
   tellNote (-7) 0.25
   tellNote (-5) 0.5
   tellNote (-12) 0.5
+  --
+  tellNote (-7) 0.5
+  tellNote (-12) 0.25
+  tellNote (-7) 0.25
+  tellNote (-5) 0.5
+  tellNote (-12) 0.25
+  tellNote (-5) 0.25
+  tellNote (-4) 0.5
+  tellNote (-5) 0.25
+  tellNote (-7) 0.25
+  tellNote (-5) 0.25
+  tellNote (-12) 0.25
+  tellNote 0 0.25
+  tellNote (-2) 0.25
+  --
+  tellNote (-4) 0.25
+  tellNote (-5) 0.25
+  tellNote (-7) 0.25
+  tellNote (-4) 0.25
+  tellNote (-5) 0.25
+  tellNote (-7) 0.25
+  tellNote (-8) 0.25
+  tellNote (-5) 0.25
+  tellNote (-7) 0.25
+  tellNote (-12) 0.25
+  tellNote (-7) 0.25
+  tellNote (-5) 0.25
+  tellNote (-4) 0.25
+  tellNote (-2) 0.25
+  tellNote 0 0.25
+  tellNote 2 0.25
+  --
+  tellNote 3 0.25
+  tellNote 1 0.25
+  tellNote 3 0.25
+  tellNote 5 0.25
+  tellNote 3 0.25
+  tellNote 1 0.25
+  tellNote 0 0.25
+  tellNote 3 0.25
+  tellNote 1 0.25
+  tellNote 0 0.25
+  tellNote 1 0.25
+  tellNote 3 0.25
+  tellNote 1 0.25
+  tellNote 0 0.25
+  tellNote (-2) 0.25
+  tellNote 1 0.25
+  --
+  tellNote 0 0.5
+  tellNote (-2) 0.5
+  tellNote (-3) 0.5
+  tellNote (-7) 0.5
+  tellNote (-2) 1.0
+  tellNote 5 1.0
+  --

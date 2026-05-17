@@ -17,4 +17,5 @@ save filePath = B.writeFile filePath . serialize
 play :: FilePath -> IO ()
 play filePath = void $ do
   let cmd = printf "ffplay -autoexit -showmode 1 -f f32le -ar %f %s" sampleRate filePath
+  putStrLn $ "$ " ++ cmd
   system cmd

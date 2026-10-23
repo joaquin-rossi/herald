@@ -4,7 +4,7 @@ import Herald.Music
 import Herald.Sound
 
 songHappyBirthday :: Sound
-songHappyBirthday = (* 0.25) <$> playScore (ScoreEnv {bpm = 99}) scoreHappyBirthday
+songHappyBirthday = gain 0.5 $ playScore (ScoreEnv {bpm = 99}) scoreHappyBirthday
 
 scoreHappyBirthday :: (Score m) => m ()
 scoreHappyBirthday = do

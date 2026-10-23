@@ -6,30 +6,52 @@ import Herald.Sound
 
 type Semitones = Int
 
-type Beats = Float
+type Beats = Double
+
+type Bpm = Double
+
+whole :: Beats
+whole = 4
+
+half :: Beats
+half = 2
+
+quarter :: Beats
+quarter = 1
+
+eighth :: Beats
+eighth = 1 / 2
+
+sixteenth :: Beats
+sixteenth = 1 / 4
+
+thirtySecond :: Beats
+thirtySecond = 1 / 8
+
+dotted :: Beats -> Beats
+dotted = (* 1.5)
 
 noteFreq :: Semitones -> Hz
-noteFreq n = 440.0 * (2 ** (1.0 / 12.0)) ** (fromIntegral n)
+noteFreq n = 440.0 * 2 ** (fromIntegral n / 12)
 
 note :: Semitones -> Seconds -> Sound
-note n t = mixSound [(a *) <$> freq' f | (f, a) <- ws]
+note n t = mixSound [gain (a / total) (envelope (freq f t)) | (f, a) <- ws]
   where
-    freq' f = zipWith3 (\x y z -> x * y * z) attack release output
-      where
-        output = freq f t
-        attack = min 1.0 <$> [0.0, 0.001 ..]
-        release = reverse $ take (length output) attack
     fs = inharmonics 0.001 (noteFreq n)
-    as = iterate (* 0.5) (1.0 :: Float)
+    as = iterate (* 0.5) 1.0
     ws = take 5 $ zip fs as
+    total = sum (snd <$> ws)
+    len = sampleCount t
+    ramp i = min 1.0 (fromIntegral i * 0.001)
+    envelope = zipWith (*) [ramp i * ramp (len - 1 - i) | i <- [0 :: Int ..]]
 
 chord :: [Semitones] -> Seconds -> Sound
-chord ns t = mixSound [note n t | n <- ns]
+chord ns t = averageSound [note n t | n <- ns]
 
 -- Score
 
 data ScoreEnv = ScoreEnv
-  { bpm :: Beats
+  { bpm :: Bpm
   }
   deriving (Show)
 
@@ -47,7 +69,7 @@ newtype ScoreT a = Score {runScoreT :: ReaderT ScoreEnv (Writer Sound) a}
 playScore :: ScoreEnv -> ScoreT a -> Sound
 playScore env m = execWriter (runReaderT (runScoreT m) env)
 
-askBpm :: (Score m) => m Beats
+askBpm :: (Score m) => m Bpm
 askBpm = asks bpm
 
 askBeatDuration :: (Score m) => m Seconds
@@ -68,7 +90,7 @@ tellChord ns b = do
   bd <- askBeatDuration
   tell $ chord ns (b * bd)
 
-together :: [ScoreT ()] -> ScoreT ()
+together :: (Score m) => [ScoreT ()] -> m ()
 together scores = do
   env <- ask
-  tell $ mixSound [playScore env s | s <- scores]
+  tell $ averageSound [playScore env s | s <- scores]

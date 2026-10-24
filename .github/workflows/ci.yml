@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  build:
+    name: GHC ${{ matrix.ghc }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        ghc: ["9.10", "9.12", "9.14"]
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: haskell-actions/setup@v2
+        id: setup
+        with:
+          ghc-version: ${{ matrix.ghc }}
+          cabal-version: latest
+
+      - name: Resolve dependencies
+        run: |
+          cabal update
+          cabal build all --enable-tests --dry-run
+
+      - uses: actions/cache@v6
+        with:
+          path: ${{ steps.setup.outputs.cabal-store }}
+          key: ${{ runner.os }}-ghc-${{ steps.setup.outputs.ghc-version }}-${{ hashFiles('dist-newstyle/cache/plan.json') }}
+          restore-keys: ${{ runner.os }}-ghc-${{ steps.setup.outputs.ghc-version }}-
+
+      - name: Build
+        run: cabal build all --enable-tests
+
+      - name: Test
+        run: cabal test all --test-show-details=direct
+
+      - name: Documentation
+        run: cabal haddock herald
+
+      - name: Package check
+        run: cabal check
+
+  ormolu:
+    name: Formatting
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: haskell-actions/run-ormolu@v21
+        with:
+          version: "0.9.0.0"

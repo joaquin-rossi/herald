@@ -1,12 +1,14 @@
 cabal-version:      3.0
 name:               herald
 version:            0.1.0.0
-synopsis:           Music synthesis and scores as Haskell code
+synopsis:           Write sheet music as Haskell code and synthesize it
 description:
     Herald synthesizes music from scores written as Haskell code: named
-    pitches, durations and voices on top of simple instruments (additive,
-    organ and Karplus-Strong plucked strings), rendered to WAV or played
-    through ffplay.
+    pitches, durations, key signatures and voices on top of simple
+    instruments (pure tones, additive, organ and Karplus-Strong plucked
+    strings),
+    rendered to WAV or played through ffplay. Start with the "Herald"
+    module, which re-exports the whole library.
 homepage:           https://github.com/joaquin-rossi/herald
 bug-reports:        https://github.com/joaquin-rossi/herald/issues
 license:            AGPL-3.0-or-later
@@ -15,7 +17,7 @@ author:             Joaquín Rossi
 maintainer:         joaquin@joaquinrossi.net
 category:           Sound
 build-type:         Simple
-tested-with:        GHC ==9.10.3
+tested-with:        GHC ==9.10.3 || ==9.12.4 || ==9.14.1
 extra-doc-files:    README.md
 
 source-repository head
@@ -37,27 +39,31 @@ library
     import:           common
     hs-source-dirs:   src
     exposed-modules:
+        Herald
+        Herald.Duration
         Herald.Instrument
-        Herald.Music
-        Herald.Music.Pitch
+        Herald.Pitch
+        Herald.Score
         Herald.Sound
         Herald.Sound.IO
 
     build-depends:
-        base ^>=4.20.2.0,
-        bytestring ^>=0.12.2.0,
-        containers ^>=0.7,
-        mtl ^>=2.3.1,
-        process ^>=1.6.26.1,
+        base >=4.20 && <4.23,
+        bytestring >=0.12 && <0.13,
+        containers >=0.7 && <0.9,
+        mtl >=2.3.1 && <2.4,
+        process >=1.6.19 && <1.7,
+        vector >=0.13.1 && <0.14,
 
-executable herald-demo
+test-suite herald-test
     import:           common
-    hs-source-dirs:   demo
+    type:             exitcode-stdio-1.0
+    hs-source-dirs:   test
     main-is:          Main.hs
-    other-modules:
-        Demo.Music.HappyBirthday
-        Demo.Music.LittleFugueInGMinor
-
     build-depends:
-        base ^>=4.20.2.0,
+        base,
+        bytestring,
         herald,
+        tasty >=1.4.2 && <1.6,
+        tasty-hunit >=0.10 && <0.11,
+        vector,

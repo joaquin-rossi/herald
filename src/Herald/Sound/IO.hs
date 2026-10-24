@@ -1,3 +1,9 @@
+-- |
+-- Module      : Herald.Sound.IO
+-- Description : Encoding sounds as WAV files and playing them.
+--
+-- Sounds are written as mono 16-bit PCM WAV at 'sampleRate'. Samples outside
+-- @[-1, 1]@ are clipped.
 module Herald.Sound.IO
   ( encodeWav,
     saveWav,
@@ -10,6 +16,7 @@ import Control.Monad
 import Data.ByteString.Builder qualified as BB
 import Data.ByteString.Lazy qualified as B
 import Data.Int
+import Data.Vector.Unboxed qualified as V
 import Data.Word
 import GHC.IO.Exception (IOErrorType (..), IOException (..))
 import Herald.Sound
@@ -19,13 +26,11 @@ import System.Process
 
 -- | Encode as a mono 16-bit PCM WAV file.
 encodeWav :: Sound -> B.ByteString
-encodeWav sound = BB.toLazyByteString header <> samples
+encodeWav sound = BB.toLazyByteString (header <> samples)
   where
-    -- Encoding the samples first keeps only compact bytes in memory while
-    -- measuring the data size, instead of the whole sample list.
-    samples = BB.toLazyByteString $ foldMap (BB.int16LE . pcm) sound
+    samples = V.foldr (\x b -> BB.int16LE (pcm x) <> b) mempty sound
     rate = round sampleRate :: Word32
-    dataSize = fromIntegral (B.length samples) :: Word32
+    dataSize = fromIntegral (2 * V.length sound) :: Word32
     header =
       mconcat
         [ BB.string7 "RIFF",
@@ -44,10 +49,13 @@ encodeWav sound = BB.toLazyByteString header <> samples
         ]
     pcm x = round (32767 * max (-1) (min 1 x)) :: Int16
 
+-- | Write a sound to a WAV file.
 saveWav :: FilePath -> Sound -> IO ()
 saveWav filePath = B.writeFile filePath . encodeWav
 
--- | Play through ffplay, streaming the WAV over its stdin.
+-- | Play a sound through @ffplay@ (from FFmpeg), which must be on the @PATH@,
+-- streaming the WAV over its standard input. Throws if @ffplay@ fails;
+-- quitting it early is not an error.
 play :: Sound -> IO ()
 play sound = do
   let args = ["-autoexit", "-showmode", "1", "-"]

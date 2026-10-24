@@ -1,0 +1,32 @@
+cabal-version:      3.0
+name:               herald-demo
+version:            0.1.0.0
+synopsis:           Example songs for the herald library
+license:            AGPL-3.0-or-later
+author:             Joaquín Rossi
+maintainer:         joaquin@joaquinrossi.net
+category:           Sound
+build-type:         Simple
+
+common common
+    default-language: GHC2024
+    ghc-options:
+        -Wall
+        -Wcompat
+        -Widentities
+        -Wincomplete-record-updates
+        -Wmissing-export-lists
+        -Wredundant-constraints
+        -Wunused-packages
+
+executable herald-demo
+    import:           common
+    hs-source-dirs:   .
+    main-is:          Main.hs
+    other-modules:
+        Demo.Music.HappyBirthday
+        Demo.Music.LittleFugueInGMinor
+
+    build-depends:
+        base >=4.20 && <4.23,
+        herald,

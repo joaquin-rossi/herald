@@ -3,12 +3,10 @@ module Demo.Music.HappyBirthday
   )
 where
 
-import Herald.Music
-import Herald.Music.Pitch
-import Herald.Sound
+import Herald
 
-songHappyBirthday :: Sound
-songHappyBirthday = gain 0.5 $ playScore defaultConfig {tempo = 99} [scoreHappyBirthday]
+songHappyBirthday :: Instrument -> Sound
+songHappyBirthday i = gain 0.5 $ playScore defaultConfig {tempo = 99, instrument = i} [scoreHappyBirthday]
 
 scoreHappyBirthday :: (Score m) => m ()
 scoreHappyBirthday = do

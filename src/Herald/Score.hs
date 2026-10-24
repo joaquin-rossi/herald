@@ -1,97 +1,78 @@
-module Herald.Music
-  ( Beats,
-    Bpm,
-    whole,
-    half,
-    quarter,
-    eighth,
-    sixteenth,
-    thirtySecond,
-    dotted,
-    noteFreq,
-    note,
-    trill,
-    chord,
+-- |
+-- Module      : Herald.Score
+-- Description : Scores: voices written as sequences of notes, rests and bars.
+--
+-- A score is a list of voices. Each voice is a sequence of @tell*@ actions
+-- read from left to right, like a staff of sheet music:
+--
+-- @
+-- melody :: t'Score' m => m ()
+-- melody = do
+--   'tellNotes' 'quarter' [g4, a4, b4]
+--   'tellBar'
+--   'tellNote' ('dotted' 'half') c5
+--
+-- song :: 'Sound'
+-- song = 'playScore' 'defaultConfig' {'tempo' = 100, 'key' = 'gMinor'} [melody]
+-- @
+--
+-- Pitches follow the rules of notation: an unwritten accidental comes from
+-- earlier in the same bar or else from the key signature, and a written one
+-- lasts until the next 'tellBar'.
+module Herald.Score
+  ( -- * Rendering
     ScoreConfig (..),
     defaultConfig,
-    ScoreEnv,
-    ScoreState,
+    playScore,
+
+    -- * Scores
     Score,
     ScoreT,
-    playScore,
+    ScoreEnv,
+    ScoreState,
+    Track,
+
+    -- * Notes and rests
+    tellNote,
+    tellNotes,
+    tellChord,
+    tellTrill,
+    tellRest,
+    tellBar,
+
+    -- * Instrument
     askInstrument,
     withInstrument,
+
+    -- * Tempo and key
     getTempo,
     setTempo,
     getBeatDuration,
     getKey,
     setKey,
-    tellBar,
-    tellRest,
-    tellNote,
-    tellNotes,
-    tellTrill,
-    tellChord,
   )
 where
 
 import Control.Monad.RWS.Strict
 import Data.Map.Strict (Map)
 import Data.Map.Strict qualified as Map
+import Data.Vector.Unboxed qualified as V
+import Herald.Duration
 import Herald.Instrument
-import Herald.Music.Pitch
+import Herald.Pitch
 import Herald.Sound
-
-type Beats = Double
-
-type Bpm = Double
-
-whole :: Beats
-whole = 4
-
-half :: Beats
-half = 2
-
-quarter :: Beats
-quarter = 1
-
-eighth :: Beats
-eighth = 1 / 2
-
-sixteenth :: Beats
-sixteenth = 1 / 4
-
-thirtySecond :: Beats
-thirtySecond = 1 / 8
-
-dotted :: Beats -> Beats
-dotted = (* 1.5)
-
-noteFreq :: Semitones -> Hz
-noteFreq n = 440.0 * 2 ** (fromIntegral n / 12)
-
-note :: Instrument -> Semitones -> Seconds -> Sound
-note i n = renderNote i (noteFreq n)
-
--- | Alternate two notes, starting with the first, in @k@ equal notes
--- filling @t@ seconds.
-trill :: Instrument -> Int -> Semitones -> Semitones -> Seconds -> Sound
-trill i k n m t = concat [note i x (t / fromIntegral k') | x <- take k' (cycle [n, m])]
-  where
-    k' = max 1 k
-
-chord :: Instrument -> [Semitones] -> Seconds -> Sound
-chord i ns t = balanceSound [note i n t | n <- ns]
-
--- Score
 
 -- | The configurable starting point of every voice in a score.
 data ScoreConfig = ScoreConfig
-  { instrument :: Instrument,
+  { -- | Instrument voices play unless they choose another one.
+    instrument :: Instrument,
+    -- | Initial tempo.
     tempo :: Bpm,
+    -- | Initial key signature.
     key :: Key
   }
 
+-- | The additive instrument at 120 beats per minute in C major.
 defaultConfig :: ScoreConfig
 defaultConfig =
   ScoreConfig
@@ -105,7 +86,7 @@ newtype ScoreEnv = ScoreEnv
   { envInstrument :: Instrument
   }
 
--- | What a voice accumulates as it advances through the score.
+-- | What a voice carries forward as it advances through the score.
 data ScoreState = ScoreState
   { -- | Tempo in effect.
     stateTempo :: Bpm,
@@ -115,23 +96,31 @@ data ScoreState = ScoreState
     stateBarAccidentals :: Map (Letter, Octave) Accidental
   }
 
-type Score m = (MonadReader ScoreEnv m, MonadWriter Sound m, MonadState ScoreState m)
+-- | The sound a voice has produced, as chunks to be joined once at the end.
+newtype Track = Track [Sound]
+  deriving newtype (Semigroup, Monoid)
 
-newtype ScoreT a = Score {runScoreT :: RWS ScoreEnv Sound ScoreState a}
+-- | The capabilities a voice needs. Write voices against this constraint;
+-- 'playScore' runs them in 'ScoreT'.
+type Score m = (MonadReader ScoreEnv m, MonadWriter Track m, MonadState ScoreState m)
+
+-- | The monad voices run in.
+newtype ScoreT a = Score {runScoreT :: RWS ScoreEnv Track ScoreState a}
   deriving
     ( Functor,
       Applicative,
       Monad,
       MonadReader ScoreEnv,
-      MonadWriter Sound,
+      MonadWriter Track,
       MonadState ScoreState
     )
 
 -- | Render each voice independently, all starting from the same
--- configuration, and mix them.
+-- configuration, and mix them with 'balanceSound'.
 playScore :: ScoreConfig -> [ScoreT ()] -> Sound
-playScore config voices = balanceSound [snd (execRWS (runScoreT v) env start) | v <- voices]
+playScore config voices = balanceSound [render v | v <- voices]
   where
+    render v = let Track chunks = snd (execRWS (runScoreT v) env start) in V.concat chunks
     env = ScoreEnv {envInstrument = instrument config}
     start =
       ScoreState
@@ -140,12 +129,15 @@ playScore config voices = balanceSound [snd (execRWS (runScoreT v) env start) | 
           stateBarAccidentals = Map.empty
         }
 
+-- | The instrument in effect.
 askInstrument :: (Score m) => m Instrument
 askInstrument = asks envInstrument
 
+-- | Play a block with another instrument.
 withInstrument :: (Score m) => Instrument -> m a -> m a
 withInstrument i = local (\env -> env {envInstrument = i})
 
+-- | The tempo in effect.
 getTempo :: (Score m) => m Bpm
 getTempo = gets stateTempo
 
@@ -153,9 +145,11 @@ getTempo = gets stateTempo
 setTempo :: (Score m) => Bpm -> m ()
 setTempo t = modify' (\st -> st {stateTempo = t})
 
+-- | How long a beat lasts at the tempo in effect.
 getBeatDuration :: (Score m) => m Seconds
 getBeatDuration = (60.0 /) <$> getTempo
 
+-- | The key signature in effect.
 getKey :: (Score m) => m Key
 getKey = gets stateKey
 
@@ -195,29 +189,36 @@ resolveAux p = do
 tellBeats :: (Score m) => Beats -> (Seconds -> Sound) -> m ()
 tellBeats b sound = do
   bd <- getBeatDuration
-  tell $ sound (b * bd)
+  tell $ Track [sound (b * bd)]
 
+-- | A rest of the given length.
 tellRest :: (Score m) => Beats -> m ()
 tellRest b = tellBeats b silence
 
+-- | A note of the given length and pitch.
 tellNote :: (Score m) => Beats -> Pitch -> m ()
 tellNote b p = do
   n <- resolve p
   i <- askInstrument
   tellBeats b $ note i n
 
+-- | Consecutive notes, all of the same length.
 tellNotes :: (Score m) => Beats -> [Pitch] -> m ()
 tellNotes b = mapM_ (tellNote b)
 
+-- | Several pitches sounding together for the given length.
+tellChord :: (Score m) => Beats -> [Pitch] -> m ()
+tellChord b ps = do
+  ns <- mapM resolve ps
+  i <- askInstrument
+  tellBeats b $ chord i ns
+
+-- | A trill of @k@ notes over the given length, alternating between a pitch
+-- and an auxiliary one, starting with the first. As in notation, an
+-- accidental on the auxiliary pitch doesn't carry on through the bar.
 tellTrill :: (Score m) => Beats -> Int -> Pitch -> Pitch -> m ()
 tellTrill b k p q = do
   n <- resolve p
   m <- resolveAux q
   i <- askInstrument
   tellBeats b $ trill i k n m
-
-tellChord :: (Score m) => Beats -> [Pitch] -> m ()
-tellChord b ps = do
-  ns <- mapM resolve ps
-  i <- askInstrument
-  tellBeats b $ chord i ns

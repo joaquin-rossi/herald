@@ -3,10 +3,7 @@ module Demo.Music.LittleFugueInGMinor
   )
 where
 
-import Herald.Instrument
-import Herald.Music
-import Herald.Music.Pitch
-import Herald.Sound
+import Herald
 
 -- Two-voice arrangement transcribed from Jeff Bigler's ABC version:
 -- https://www.mit.edu/~jcb/little-fugue.html
@@ -15,13 +12,14 @@ import Herald.Sound
 -- distribute, modify, and/or perform this music in any form as long as this
 -- copyright notice is included.
 
-songLittleFugueInGMinor :: Sound
-songLittleFugueInGMinor =
+-- | The fugue with an instrument for each voice, upper voice first.
+songLittleFugueInGMinor :: Instrument -> Instrument -> Sound
+songLittleFugueInGMinor upper lower =
   gain 0.5 $
     playScore
       defaultConfig {tempo = 144, key = gMinor}
-      [ withInstrument organ scoreLittleFugueInGMinor1,
-        withInstrument harpsichord scoreLittleFugueInGMinor2
+      [ withInstrument upper scoreLittleFugueInGMinor1,
+        withInstrument lower scoreLittleFugueInGMinor2
       ]
 
 scoreLittleFugueInGMinor1 :: (Score m) => m ()

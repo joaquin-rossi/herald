@@ -1,4 +1,4 @@
-# herald: sheet music in haskell
+# herald: sheet music in Haskell
 
 [![CI](https://github.com/joaquin-rossi/herald/actions/workflows/ci.yml/badge.svg)](https://github.com/joaquin-rossi/herald/actions/workflows/ci.yml)
 
@@ -9,7 +9,7 @@ Original idea: https://www.youtube.com/watch?v=FYTZkE5BZ-0
 ## Features
 
 - **Scores as code**: each voice is a sequence of notes, rests and bar lines, read like a staff.
-- **Notation rules**: named pitches (`c4`, `fs4`, `bb4`, …), key signatures, and accidentals that last until the end of the bar.
+- **Notation rules**: named pitches (`c4`, `fs4`, `bb4`, …), key signatures, and accidentals.
 - **Rhythm and tempo**: note values from whole to thirty-second notes, dotted notes, and tempo changes mid-score.
 - **Several voices**, mixed at balanced levels, plus chords and trills.
 - **Instruments**: pure tones, additive synthesis, a pipe organ and a Karplus-Strong harpsichord, or your own as a function from frequency and duration to sound.
@@ -63,7 +63,7 @@ cabal run herald-demo -- play little-fugue pure harpsichord  # one instrument pe
 | `happy-birthday` | `additive` |
 | `little-fugue` | `organ` `harpsichord` |
 
-Instruments: `pure`, `additive`, `organ`, `harpsichord`. A song takes either none (its defaults) or one per voice.
+Instruments: `pure`, `additive`, `organ`, `harpsichord`.
 
 ### Little Fugue in G Minor
 

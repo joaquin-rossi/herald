@@ -29,7 +29,3 @@ L:1/8
 [V:1] B/A/G/B/ A/G/^F/A/ G/D/G/A/ B/c/d/=e/ | =f/=e/d/f/ e/d/^c/e/ dAde | (f/g/)f/g/ (T.gf/g/) a/g/a/b/ a/g/f/=e/ | f/a/g/a/ ^c/a/g/a/ d/a/g/a/ c/a/g/a/ |
 [V:2] z8 | D2 A2 F3 =E | DF=ED (^CE) A,2 | DA,=EA, FE/D/ EA, |
 ```
-
-[Original](docs/little_fugue_in_g_minor_og.mp3)
-
-[Generated](docs/little_fugue_in_g_minor_gen.mp3)

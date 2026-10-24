@@ -1,7 +1,8 @@
-# Herald
+# herald: sheet music in haskell
 
-> [!NOTE]
-> Idea: https://www.youtube.com/watch?v=FYTZkE5BZ-0
+Haskell library for writing musical scores as code and synthesizing them into audio.
+
+Original idea: https://www.youtube.com/watch?v=FYTZkE5BZ-0
 
 ## Demo
 

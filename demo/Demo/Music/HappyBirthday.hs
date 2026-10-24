@@ -1,4 +1,7 @@
-module Demo.Music.HappyBirthday where
+module Demo.Music.HappyBirthday
+  ( songHappyBirthday,
+  )
+where
 
 import Herald.Instrument
 import Herald.Music

@@ -1,4 +1,7 @@
-module Demo.Music.LittleFugueInGMinor where
+module Demo.Music.LittleFugueInGMinor
+  ( songLittleFugueInGMinor,
+  )
+where
 
 import Herald.Instrument
 import Herald.Music

@@ -6,8 +6,8 @@
 ## Demo
 
 ```sh
-cabal run demo -- play little-fugue              # requires ffplay
-cabal run demo -- wav little-fugue fugue.wav
+cabal run herald-demo -- play little-fugue  # requires ffplay
+cabal run herald-demo -- wav little-fugue fugue.wav
 ```
 
 Songs: `happy-birthday`, `little-fugue`.

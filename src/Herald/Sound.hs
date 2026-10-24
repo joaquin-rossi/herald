@@ -1,4 +1,21 @@
-module Herald.Sound where
+module Herald.Sound
+  ( Seconds,
+    Hz,
+    Pulse,
+    Sound,
+    sampleRate,
+    sampleCount,
+    silence,
+    freq,
+    whiteNoise,
+    pluck,
+    harmonics,
+    inharmonics,
+    gain,
+    mixSound,
+    balanceSound,
+  )
+where
 
 type Seconds = Double
 

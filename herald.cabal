@@ -1,44 +1,62 @@
 cabal-version:      3.0
 name:               herald
 version:            0.1.0.0
+synopsis:           Music synthesis and scores as Haskell code
+description:
+    Herald synthesizes music from scores written as Haskell code: named
+    pitches, durations and voices on top of simple instruments (additive,
+    organ and Karplus-Strong plucked strings), rendered to WAV or played
+    through ffplay.
+homepage:           https://github.com/joaquin-rossi/herald
+bug-reports:        https://github.com/joaquin-rossi/herald/issues
 license:            AGPL-3.0-or-later
 license-file:       LICENSE
 author:             Joaquín Rossi
 maintainer:         joaquin@joaquinrossi.net
 category:           Sound
 build-type:         Simple
+tested-with:        GHC ==9.10.3
+extra-doc-files:    README.md
 
-common warnings
-    ghc-options: -Wall
+source-repository head
+    type:     git
+    location: https://github.com/joaquin-rossi/herald.git
+
+common common
+    default-language: GHC2024
+    ghc-options:
+        -Wall
+        -Wcompat
+        -Widentities
+        -Wincomplete-record-updates
+        -Wmissing-export-lists
+        -Wredundant-constraints
+        -Wunused-packages
 
 library
-    import: warnings
-
+    import:           common
+    hs-source-dirs:   src
     exposed-modules:
-        Herald.Instrument,
-        Herald.Music,
-        Herald.Music.Pitch,
-        Herald.Sound,
+        Herald.Instrument
+        Herald.Music
+        Herald.Music.Pitch
+        Herald.Sound
         Herald.Sound.IO
 
-    hs-source-dirs:   src
-    default-language: GHC2024
     build-depends:
         base ^>=4.20.2.0,
         bytestring ^>=0.12.2.0,
-        mtl ^>=2.3.2,
+        mtl ^>=2.3.1,
         process ^>=1.6.26.1,
 
-executable demo
-    import: warnings
-
-    main-is: Main.hs
+executable herald-demo
+    import:           common
+    hs-source-dirs:   demo
+    main-is:          Main.hs
     other-modules:
         Demo.Music.HappyBirthday
         Demo.Music.LittleFugueInGMinor
 
-    hs-source-dirs:   demo
-    default-language: GHC2024
     build-depends:
         base ^>=4.20.2.0,
         herald,

@@ -1,4 +1,11 @@
-module Herald.Instrument where
+module Herald.Instrument
+  ( Instrument (..),
+    partials,
+    additive,
+    organ,
+    harpsichord,
+  )
+where
 
 import Herald.Sound
 

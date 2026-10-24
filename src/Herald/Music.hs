@@ -1,4 +1,33 @@
-module Herald.Music where
+module Herald.Music
+  ( Beats,
+    Bpm,
+    whole,
+    half,
+    quarter,
+    eighth,
+    sixteenth,
+    thirtySecond,
+    dotted,
+    noteFreq,
+    note,
+    trill,
+    chord,
+    ScoreEnv (..),
+    Score,
+    ScoreT,
+    playScore,
+    askBpm,
+    askBeatDuration,
+    askInstrument,
+    withInstrument,
+    tellRest,
+    tellNote,
+    tellNotes,
+    tellTrill,
+    tellChord,
+    together,
+  )
+where
 
 import Control.Monad.Reader
 import Control.Monad.Writer.Strict

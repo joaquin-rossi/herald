@@ -1,4 +1,9 @@
-module Herald.Sound.IO where
+module Herald.Sound.IO
+  ( encodeWav,
+    saveWav,
+    play,
+  )
+where
 
 import Control.Exception
 import Control.Monad

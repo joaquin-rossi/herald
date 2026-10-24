@@ -1,4 +1,4 @@
-module Main.Music.HappyBirthday where
+module Demo.Music.HappyBirthday where
 
 import Herald.Music
 import Herald.Sound

@@ -1,20 +1,59 @@
 module Herald.Sound.IO where
 
+import Control.Exception
+import Control.Monad
 import Data.ByteString.Builder qualified as BB
 import Data.ByteString.Lazy qualified as B
+import Data.Int
+import Data.Word
+import GHC.IO.Exception (IOErrorType (..), IOException (..))
 import Herald.Sound
+import System.Exit
+import System.IO (hClose)
 import System.Process
 
-serialize :: Sound -> B.ByteString
-serialize = BB.toLazyByteString . foldMap (BB.floatLE . realToFrac . clamp)
+-- | Encode as a mono 16-bit PCM WAV file.
+encodeWav :: Sound -> B.ByteString
+encodeWav sound = BB.toLazyByteString header <> samples
   where
-    clamp = max (-1) . min 1
+    -- Encoding the samples first keeps only compact bytes in memory while
+    -- measuring the data size, instead of the whole sample list.
+    samples = BB.toLazyByteString $ foldMap (BB.int16LE . pcm) sound
+    rate = round sampleRate :: Word32
+    dataSize = fromIntegral (B.length samples) :: Word32
+    header =
+      mconcat
+        [ BB.string7 "RIFF",
+          BB.word32LE (36 + dataSize),
+          BB.string7 "WAVE",
+          BB.string7 "fmt ",
+          BB.word32LE 16, -- fmt chunk size
+          BB.word16LE 1, -- PCM
+          BB.word16LE 1, -- mono
+          BB.word32LE rate,
+          BB.word32LE (rate * 2), -- byte rate
+          BB.word16LE 2, -- block align
+          BB.word16LE 16, -- bits per sample
+          BB.string7 "data",
+          BB.word32LE dataSize
+        ]
+    pcm x = round (32767 * max (-1) (min 1 x)) :: Int16
 
-save :: FilePath -> Sound -> IO ()
-save filePath = B.writeFile filePath . serialize
+saveWav :: FilePath -> Sound -> IO ()
+saveWav filePath = B.writeFile filePath . encodeWav
 
-play :: FilePath -> IO ()
-play filePath = do
-  let args = ["-autoexit", "-showmode", "1", "-f", "f32le", "-ar", show (round sampleRate :: Int), filePath]
+-- | Play through ffplay, streaming the WAV over its stdin.
+play :: Sound -> IO ()
+play sound = do
+  let args = ["-autoexit", "-showmode", "1", "-"]
   putStrLn $ "$ " ++ unwords ("ffplay" : args)
-  callProcess "ffplay" args
+  withCreateProcess (proc "ffplay" args) {std_in = CreatePipe} $ \stdin' _ _ ph -> do
+    -- ffplay closes the pipe early if the user quits; that's not an error.
+    forM_ stdin' $ \h -> ignoreBrokenPipe $ B.hPut h (encodeWav sound) >> hClose h
+    code <- waitForProcess ph
+    case code of
+      ExitSuccess -> pure ()
+      ExitFailure n -> ioError . userError $ "ffplay exited with code " ++ show n
+  where
+    ignoreBrokenPipe = handle $ \e ->
+      unless (ioe_type e == ResourceVanished) (throwIO e)

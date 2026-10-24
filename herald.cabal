@@ -27,19 +27,16 @@ library
         mtl ^>=2.3.2,
         process ^>=1.6.26.1,
 
-executable herald
+executable demo
     import: warnings
 
     main-is: Main.hs
     other-modules:
-        Main.Music.HappyBirthday
-        Main.Music.LittleFugueInGMinor
+        Demo.Music.HappyBirthday
+        Demo.Music.LittleFugueInGMinor
 
-    hs-source-dirs:   app
+    hs-source-dirs:   demo
     default-language: GHC2024
     build-depends:
         base ^>=4.20.2.0,
-        bytestring ^>=0.12.2.0,
         herald,
-        mtl ^>=2.3.2,
-        process ^>=1.6.26.1,

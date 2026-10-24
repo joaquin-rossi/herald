@@ -3,6 +3,15 @@
 > [!NOTE]
 > Idea: https://www.youtube.com/watch?v=FYTZkE5BZ-0
 
+## Demo
+
+```sh
+cabal run demo -- play little-fugue              # requires ffplay
+cabal run demo -- wav little-fugue fugue.wav
+```
+
+Songs: `happy-birthday`, `little-fugue`.
+
 ## Little Fugue in G Minor
 
 https://www.mit.edu/~jcb/little-fugue.html

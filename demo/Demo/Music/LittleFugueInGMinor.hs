@@ -1,4 +1,4 @@
-module Main.Music.LittleFugueInGMinor where
+module Demo.Music.LittleFugueInGMinor where
 
 import Herald.Music
 import Herald.Sound

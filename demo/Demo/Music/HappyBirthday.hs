@@ -1,11 +1,12 @@
 module Demo.Music.HappyBirthday where
 
+import Herald.Instrument
 import Herald.Music
 import Herald.Music.Pitch
 import Herald.Sound
 
 songHappyBirthday :: Sound
-songHappyBirthday = gain 0.5 $ playScore (ScoreEnv {bpm = 99}) scoreHappyBirthday
+songHappyBirthday = gain 0.5 $ playScore (ScoreEnv {bpm = 99, instrument = additive}) scoreHappyBirthday
 
 scoreHappyBirthday :: (Score m) => m ()
 scoreHappyBirthday = do

@@ -15,6 +15,7 @@ library
     import: warnings
 
     exposed-modules:
+        Herald.Instrument,
         Herald.Music,
         Herald.Music.Pitch,
         Herald.Sound,

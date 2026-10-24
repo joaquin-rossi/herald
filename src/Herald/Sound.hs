@@ -22,6 +22,34 @@ freq f t = [sin (fromIntegral i * step) | i <- [0 .. sampleCount t - 1]]
   where
     step = (f * 2 * pi) / sampleRate
 
+-- | Deterministic white noise in [-1, 1) from a linear congruential generator.
+whiteNoise :: Int -> Sound
+whiteNoise = map unit . drop 1 . iterate step
+  where
+    step x = (1103515245 * x + 12345) `mod` 2147483648
+    unit x = fromIntegral x / 1073741824 - 1
+
+-- | Karplus-Strong plucked string: one period of noise fed back through a
+-- delay line with an averaging low-pass filter. @decay@ is the gain applied
+-- on every trip around the loop, i.e. once per period.
+pluck :: Double -> Hz -> Seconds -> Sound
+pluck decay f t = take (sampleCount t) out
+  where
+    -- The loop is n samples of delay line, minus half a sample from the
+    -- averaging filter, plus a fractional delay d from a first-order all-pass
+    -- (Jaffe & Smith), so that its total length is exactly one period.
+    period = sampleRate / f
+    n = max 2 (floor (period + 0.4))
+    d = period + 0.5 - fromIntegral n
+    c = (1 - d) / (1 + d)
+    burst = take n (whiteNoise (round f))
+    mean = sum burst / fromIntegral n
+    peak = maximum [abs (x - mean) | x <- burst]
+    excitation = [(x - mean) / peak | x <- burst]
+    averaged = zipWith (\x y -> decay * (x + y) / 2) out (drop 1 out)
+    allpassed = zipWith3 (\x x' y' -> c * x + x' - c * y') averaged (0 : averaged) (0 : allpassed)
+    out = excitation ++ allpassed
+
 harmonics :: Hz -> [Hz]
 harmonics f = (* f) <$> [1 ..]
 

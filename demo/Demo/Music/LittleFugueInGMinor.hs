@@ -1,13 +1,18 @@
 module Demo.Music.LittleFugueInGMinor where
 
+import Herald.Instrument
 import Herald.Music
 import Herald.Music.Pitch
 import Herald.Sound
 
 songLittleFugueInGMinor :: Sound
-songLittleFugueInGMinor = gain 0.7 $ playScore (ScoreEnv {bpm = 144}) score
+songLittleFugueInGMinor = gain 0.5 $ playScore (ScoreEnv {bpm = 144, instrument = additive}) score
   where
-    score = together [scoreLittleFugueInGMinor1, scoreLittleFugueInGMinor2]
+    score =
+      together
+        [ withInstrument organ scoreLittleFugueInGMinor1,
+          withInstrument harpsichord scoreLittleFugueInGMinor2
+        ]
 
 scoreLittleFugueInGMinor1 :: (Score m) => m ()
 scoreLittleFugueInGMinor1 = do

@@ -2,6 +2,7 @@ module Herald.Music where
 
 import Control.Monad.Reader
 import Control.Monad.Writer.Strict
+import Herald.Instrument
 import Herald.Music.Pitch
 import Herald.Sound
 
@@ -33,33 +34,25 @@ dotted = (* 1.5)
 noteFreq :: Semitones -> Hz
 noteFreq n = 440.0 * 2 ** (fromIntegral n / 12)
 
-note :: Semitones -> Seconds -> Sound
-note n t = mixSound [gain (a / total) (envelope (freq f t)) | (f, a) <- ws]
-  where
-    fs = inharmonics 0.001 (noteFreq n)
-    as = iterate (* 0.5) 1.0
-    ws = take 5 $ zip fs as
-    total = sum (snd <$> ws)
-    len = sampleCount t
-    ramp i = min 1.0 (fromIntegral i * 0.001)
-    envelope = zipWith (*) [ramp i * ramp (len - 1 - i) | i <- [0 :: Int ..]]
+note :: Instrument -> Semitones -> Seconds -> Sound
+note i n = renderNote i (noteFreq n)
 
 -- | Alternate two notes, starting with the first, in @k@ equal notes
 -- filling @t@ seconds.
-trill :: Int -> Semitones -> Semitones -> Seconds -> Sound
-trill k n m t = concat [note x (t / fromIntegral k') | x <- take k' (cycle [n, m])]
+trill :: Instrument -> Int -> Semitones -> Semitones -> Seconds -> Sound
+trill i k n m t = concat [note i x (t / fromIntegral k') | x <- take k' (cycle [n, m])]
   where
     k' = max 1 k
 
-chord :: [Semitones] -> Seconds -> Sound
-chord ns t = balanceSound [note n t | n <- ns]
+chord :: Instrument -> [Semitones] -> Seconds -> Sound
+chord i ns t = balanceSound [note i n t | n <- ns]
 
 -- Score
 
 data ScoreEnv = ScoreEnv
-  { bpm :: Bpm
+  { bpm :: Bpm,
+    instrument :: Instrument
   }
-  deriving (Show)
 
 type Score m = (MonadReader ScoreEnv m, MonadWriter Sound m)
 
@@ -81,6 +74,12 @@ askBpm = asks bpm
 askBeatDuration :: (Score m) => m Seconds
 askBeatDuration = (60.0 /) <$> askBpm
 
+askInstrument :: (Score m) => m Instrument
+askInstrument = asks instrument
+
+withInstrument :: (Score m) => Instrument -> m a -> m a
+withInstrument i = local (\env -> env {instrument = i})
+
 tellRest :: (Score m) => Beats -> m ()
 tellRest b = do
   bd <- askBeatDuration
@@ -89,7 +88,8 @@ tellRest b = do
 tellNote :: (Score m) => Beats -> Pitch -> m ()
 tellNote b p = do
   bd <- askBeatDuration
-  tell $ note (pitchSemitones p) (b * bd)
+  i <- askInstrument
+  tell $ note i (pitchSemitones p) (b * bd)
 
 tellNotes :: (Score m) => Beats -> [Pitch] -> m ()
 tellNotes b = mapM_ (tellNote b)
@@ -97,12 +97,14 @@ tellNotes b = mapM_ (tellNote b)
 tellTrill :: (Score m) => Beats -> Int -> Pitch -> Pitch -> m ()
 tellTrill b k p q = do
   bd <- askBeatDuration
-  tell $ trill k (pitchSemitones p) (pitchSemitones q) (b * bd)
+  i <- askInstrument
+  tell $ trill i k (pitchSemitones p) (pitchSemitones q) (b * bd)
 
 tellChord :: (Score m) => Beats -> [Pitch] -> m ()
 tellChord b ps = do
   bd <- askBeatDuration
-  tell $ chord (pitchSemitones <$> ps) (b * bd)
+  i <- askInstrument
+  tell $ chord i (pitchSemitones <$> ps) (b * bd)
 
 together :: (Score m) => [ScoreT ()] -> m ()
 together scores = do

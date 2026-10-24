@@ -48,7 +48,7 @@ main = do
 
 ## Demo
 
-The [`demo`](demo) package renders a couple of songs:
+The [`demo`](https://github.com/joaquin-rossi/herald/tree/master/demo) package in the repository renders a couple of songs. Videos of them play on [GitHub](https://github.com/joaquin-rossi/herald).
 
 ```sh
 cabal run herald-demo -- play little-fugue                   # requires ffplay
@@ -72,15 +72,3 @@ Source: https://www.mit.edu/~jcb/little-fugue-two-violins.abc
 ### Happy Birthday
 
 https://github.com/user-attachments/assets/ae7f5c15-e213-4c3a-88cf-05e7b19d2d02
-
-## Development
-
-```sh
-cabal build all
-cabal test all
-ormolu --mode inplace $(git ls-files '*.hs')
-```
-
-## License
-
-AGPL-3.0-or-later. The Little Fugue transcription in the demo is © 2003 Jeff Bigler, used under the terms in its source file.

@@ -59,7 +59,6 @@ saveWav filePath = B.writeFile filePath . encodeWav
 play :: Sound -> IO ()
 play sound = do
   let args = ["-autoexit", "-showmode", "1", "-"]
-  putStrLn $ "$ " ++ unwords ("ffplay" : args)
   withCreateProcess (proc "ffplay" args) {std_in = CreatePipe} $ \stdin' _ _ ph -> do
     -- ffplay closes the pipe early if the user quits; that's not an error.
     forM_ stdin' $ \h -> ignoreBrokenPipe $ B.hPut h (encodeWav sound) >> hClose h

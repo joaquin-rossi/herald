@@ -50,6 +50,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: haskell-actions/run-ormolu@v21
-        with:
-          version: "0.9.0.0"
+
+      # haskell-actions/run-ormolu downloads from a repository that no longer
+      # hosts the releases, so fetch the pinned version directly.
+      - name: Install ormolu
+        run: |
+          curl -sSfL -o ormolu.zip https://github.com/tweag/ormolu/releases/download/0.9.0.0/ormolu-x86_64-linux.zip
+          unzip -q ormolu.zip -d "$RUNNER_TEMP/ormolu"
+          echo "$RUNNER_TEMP/ormolu" >> "$GITHUB_PATH"
+
+      - name: Check formatting
+        run: ormolu --mode check --check-idempotence $(git ls-files '*.hs')

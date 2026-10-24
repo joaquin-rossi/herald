@@ -48,7 +48,7 @@ mixSound xs
     drop1 [] = []
     drop1 (_ : ys) = ys
 
--- | Mix sounds dividing by their count, so the peak never exceeds the
--- loudest input.
-averageSound :: [Sound] -> Sound
-averageSound xs = gain (1 / fromIntegral (max 1 (length xs))) (mixSound xs)
+-- | Mix sounds dividing by the square root of their count, so the result
+-- sounds about as loud as a single input. Peaks may exceed the loudest input.
+balanceSound :: [Sound] -> Sound
+balanceSound xs = gain (1 / sqrt (fromIntegral (max 1 (length xs)))) (mixSound xs)

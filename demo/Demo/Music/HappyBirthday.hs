@@ -1,6 +1,7 @@
 module Demo.Music.HappyBirthday where
 
 import Herald.Music
+import Herald.Music.Pitch
 import Herald.Sound
 
 songHappyBirthday :: Sound
@@ -9,36 +10,23 @@ songHappyBirthday = gain 0.5 $ playScore (ScoreEnv {bpm = 99}) scoreHappyBirthda
 scoreHappyBirthday :: (Score m) => m ()
 scoreHappyBirthday = do
   tellRest 2
-  tellNote (-2) 0.5
-  tellNote (-2) 0.5
+  tellNotes 0.5 [g4, g4]
   --
-  tellNote 0 1
-  tellNote (-2) 1
-  tellNote 3 1
+  tellNotes 1 [a4, g4, c5]
   --
-  tellNote 2 2
-  tellNote (-2) 0.5
-  tellNote (-2) 0.5
+  tellNote 2 b4
+  tellNotes 0.5 [g4, g4]
   --
-  tellNote 0 1
-  tellNote (-2) 1
-  tellNote 5 1
+  tellNotes 1 [a4, g4, d5]
   --
-  tellNote 3 2
-  tellNote (-2) 0.5
-  tellNote (-2) 0.5
+  tellNote 2 c5
+  tellNotes 0.5 [g4, g4]
   --
-  tellNote 10 1
-  tellNote 7 1
-  tellNote 3 1
+  tellNotes 1 [g5, e5, c5]
   --
-  tellNote 2 1
-  tellNote 0 1
-  tellNote 8 0.5
-  tellNote 8 0.5
+  tellNotes 1 [b4, a4]
+  tellNotes 0.5 [f5, f5]
   --
-  tellNote 7 1
-  tellNote 3 1
-  tellNote 5 1
+  tellNotes 1 [e5, c5, d5]
   --
-  tellNote 3 3
+  tellNote 3 c5

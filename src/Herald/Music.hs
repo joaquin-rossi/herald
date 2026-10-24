@@ -2,9 +2,8 @@ module Herald.Music where
 
 import Control.Monad.Reader
 import Control.Monad.Writer.Strict
+import Herald.Music.Pitch
 import Herald.Sound
-
-type Semitones = Int
 
 type Beats = Double
 
@@ -45,8 +44,15 @@ note n t = mixSound [gain (a / total) (envelope (freq f t)) | (f, a) <- ws]
     ramp i = min 1.0 (fromIntegral i * 0.001)
     envelope = zipWith (*) [ramp i * ramp (len - 1 - i) | i <- [0 :: Int ..]]
 
+-- | Alternate two notes, starting with the first, in @k@ equal notes
+-- filling @t@ seconds.
+trill :: Int -> Semitones -> Semitones -> Seconds -> Sound
+trill k n m t = concat [note x (t / fromIntegral k') | x <- take k' (cycle [n, m])]
+  where
+    k' = max 1 k
+
 chord :: [Semitones] -> Seconds -> Sound
-chord ns t = averageSound [note n t | n <- ns]
+chord ns t = balanceSound [note n t | n <- ns]
 
 -- Score
 
@@ -80,17 +86,25 @@ tellRest b = do
   bd <- askBeatDuration
   tell $ silence (b * bd)
 
-tellNote :: (Score m) => Semitones -> Beats -> m ()
-tellNote n b = do
+tellNote :: (Score m) => Beats -> Pitch -> m ()
+tellNote b p = do
   bd <- askBeatDuration
-  tell $ note n (b * bd)
+  tell $ note (pitchSemitones p) (b * bd)
 
-tellChord :: (Score m) => [Semitones] -> Beats -> m ()
-tellChord ns b = do
+tellNotes :: (Score m) => Beats -> [Pitch] -> m ()
+tellNotes b = mapM_ (tellNote b)
+
+tellTrill :: (Score m) => Beats -> Int -> Pitch -> Pitch -> m ()
+tellTrill b k p q = do
   bd <- askBeatDuration
-  tell $ chord ns (b * bd)
+  tell $ trill k (pitchSemitones p) (pitchSemitones q) (b * bd)
+
+tellChord :: (Score m) => Beats -> [Pitch] -> m ()
+tellChord b ps = do
+  bd <- askBeatDuration
+  tell $ chord (pitchSemitones <$> ps) (b * bd)
 
 together :: (Score m) => [ScoreT ()] -> m ()
 together scores = do
   env <- ask
-  tell $ averageSound [playScore env s | s <- scores]
+  tell $ balanceSound [playScore env s | s <- scores]

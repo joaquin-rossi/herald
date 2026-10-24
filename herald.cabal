@@ -16,6 +16,7 @@ library
 
     exposed-modules:
         Herald.Music,
+        Herald.Music.Pitch,
         Herald.Sound,
         Herald.Sound.IO
 

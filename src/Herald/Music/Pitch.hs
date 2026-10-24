@@ -7,6 +7,12 @@ module Herald.Music.Pitch
     flat,
     sharp,
     natural,
+    Key (..),
+    keyAccidental,
+    sharps,
+    flats,
+    cMajor,
+    gMinor,
     pitchSemitones,
     -- * Pitch names
     cb0,
@@ -201,6 +207,8 @@ module Herald.Music.Pitch
   )
 where
 
+import Data.Map.Strict (Map)
+import Data.Map.Strict qualified as Map
 import Data.Maybe
 
 type Semitones = Int
@@ -217,7 +225,7 @@ data Accidental = Flat | Natural | Sharp
 data Pitch = Pitch
   { letter :: Letter,
     octave :: Octave,
-    -- | 'Nothing' when no accidental is written; for now it reads as natural.
+    -- | 'Nothing' when no accidental is written, so the key decides.
     accidental :: Maybe Accidental
   }
   deriving (Show, Eq)
@@ -231,9 +239,30 @@ sharp p = p {accidental = Just Sharp}
 natural :: Pitch -> Pitch
 natural p = p {accidental = Just Natural}
 
--- | Semitones relative to A4.
-pitchSemitones :: Pitch -> Semitones
-pitchSemitones (Pitch l o acc) = base l + offset (fromMaybe Natural acc) + 12 * (o - 4) - 9
+-- | A key signature: the accidental each letter takes when none is written.
+newtype Key = Key (Map Letter Accidental)
+  deriving (Show, Eq)
+
+keyAccidental :: Key -> Letter -> Accidental
+keyAccidental (Key as) l = Map.findWithDefault Natural l as
+
+-- | Key signature with @n@ sharps, added in the order F C G D A E B.
+sharps :: Int -> Key
+sharps n = Key $ Map.fromList [(l, Sharp) | l <- take n [F, C, G, D, A, E, B]]
+
+-- | Key signature with @n@ flats, added in the order B E A D G C F.
+flats :: Int -> Key
+flats n = Key $ Map.fromList [(l, Flat) | l <- take n [B, E, A, D, G, C, F]]
+
+cMajor :: Key
+cMajor = Key Map.empty
+
+gMinor :: Key
+gMinor = flats 2
+
+-- | Semitones relative to A4, taking unwritten accidentals from the key.
+pitchSemitones :: Key -> Pitch -> Semitones
+pitchSemitones key (Pitch l o acc) = base l + offset (fromMaybe (keyAccidental key l) acc) + 12 * (o - 4) - 9
   where
     base C = 0
     base D = 2

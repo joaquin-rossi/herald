@@ -27,13 +27,15 @@ import Herald
 
 melody :: Score m => m ()
 melody = do
-  tellNotes quarter [g4, b4, a4, g4] -- b4 is B flat: the key is G minor
+  setKey gMinor
+  tellNotes quarter [g4, b4, a4, g4] -- b4 is B flat in G minor
   tellBar
   tellNote half (sharp f4)
   tellNote half g4
 
 bass :: Score m => m ()
 bass = do
+  setKey gMinor
   tellNote whole g3
   tellBar
   tellNote half d3
@@ -41,7 +43,7 @@ bass = do
 
 main :: IO ()
 main = do
-  let song = playScore defaultConfig {tempo = 100, key = gMinor} [melody, withInstrument organ bass]
+  let song = playScore defaultConfig {tempo = 100} [melody, withInstrument organ bass]
   saveWav "song.wav" song
   play song
 ```

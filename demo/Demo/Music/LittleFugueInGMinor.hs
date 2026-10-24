@@ -17,13 +17,14 @@ songLittleFugueInGMinor :: Instrument -> Instrument -> Sound
 songLittleFugueInGMinor upper lower =
   gain 0.5 $
     playScore
-      defaultConfig {tempo = 144, key = gMinor}
+      defaultConfig {tempo = 144}
       [ withInstrument upper scoreLittleFugueInGMinor1,
         withInstrument lower scoreLittleFugueInGMinor2
       ]
 
 scoreLittleFugueInGMinor1 :: (Score m) => m ()
 scoreLittleFugueInGMinor1 = do
+  setKey gMinor
   -- bar 1
   tellNotes quarter [g4, d5]
   tellNote (dotted quarter) b4
@@ -314,6 +315,7 @@ scoreLittleFugueInGMinor1 = do
 
 scoreLittleFugueInGMinor2 :: (Score m) => m ()
 scoreLittleFugueInGMinor2 = do
+  setKey gMinor
   -- bar 1
   tellRest whole
   -- bar 2

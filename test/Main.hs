@@ -80,8 +80,9 @@ scoreTests =
         V.length (render (tellRest half >> tellNote eighth c4)) @?= 60000,
       testCase "tempo changes apply from then on" $
         V.length (render (tellNote quarter c4 >> setTempo 60 >> tellNote quarter c4)) @?= 72000,
-      testCase "the key comes from the configuration" $
-        playScore defaultConfig {key = gMinor} [tellNote quarter b4] @?= render (tellNote quarter bb4),
+      testCase "voices start in C major and setKey applies from then on" $
+        render (tellNote quarter b4 >> setKey gMinor >> tellNote quarter b4)
+          @?= render (tellNotes quarter [natural b4, bb4]),
       testCase "an accidental lasts until the end of the bar" $
         render (tellNote quarter (sharp f4) >> tellNote quarter f4)
           @?= render (tellNotes quarter [fs4, fs4]),

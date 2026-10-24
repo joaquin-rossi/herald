@@ -8,17 +8,19 @@
 -- @
 -- melody :: t'Score' m => m ()
 -- melody = do
+--   'setKey' 'gMinor'
 --   'tellNotes' 'quarter' [g4, a4, b4]
 --   'tellBar'
 --   'tellNote' ('dotted' 'half') c5
 --
 -- song :: 'Sound'
--- song = 'playScore' 'defaultConfig' {'tempo' = 100, 'key' = 'gMinor'} [melody]
+-- song = 'playScore' 'defaultConfig' {'tempo' = 100} [melody]
 -- @
 --
 -- Pitches follow the rules of notation: an unwritten accidental comes from
 -- earlier in the same bar or else from the key signature, and a written one
--- lasts until the next 'tellBar'.
+-- lasts until the next 'tellBar'. Voices start in C major; like the key
+-- signature at the start of a staff, each voice sets its own with 'setKey'.
 module Herald.Score
   ( -- * Rendering
     ScoreConfig (..),
@@ -67,18 +69,15 @@ data ScoreConfig = ScoreConfig
   { -- | Instrument voices play unless they choose another one.
     instrument :: Instrument,
     -- | Initial tempo.
-    tempo :: Bpm,
-    -- | Initial key signature.
-    key :: Key
+    tempo :: Bpm
   }
 
--- | The additive instrument at 120 beats per minute in C major.
+-- | The additive instrument at 120 beats per minute.
 defaultConfig :: ScoreConfig
 defaultConfig =
   ScoreConfig
     { instrument = additive,
-      tempo = 120,
-      key = cMajor
+      tempo = 120
     }
 
 -- | Settings that apply to a block of the score and are restored after it.
@@ -125,7 +124,7 @@ playScore config voices = balanceSound [render v | v <- voices]
     start =
       ScoreState
         { stateTempo = tempo config,
-          stateKey = key config,
+          stateKey = cMajor,
           stateBarAccidentals = Map.empty
         }
 

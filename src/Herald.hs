@@ -29,7 +29,9 @@
 --   'tellNote' 'half' g4
 --
 -- main :: IO ()
--- main = 'saveWav' "melody.wav" ('playScore' 'defaultConfig' {'tempo' = 100} [melody])
+-- main =
+--   either (putStrLn . 'displayScoreError') ('saveWav' "melody.wav") $
+--     'playScoreMono' 'defaultConfig' {'tempo' = 100} [('defaultVoice', melody)]
 -- @
 module Herald
   ( module Herald.Duration,

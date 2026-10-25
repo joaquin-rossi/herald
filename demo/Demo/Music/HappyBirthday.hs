@@ -5,8 +5,8 @@ where
 
 import Herald
 
-songHappyBirthday :: Instrument -> Sound
-songHappyBirthday i = gain 0.5 $ playScore defaultConfig {tempo = 99, instrument = i} [scoreHappyBirthday]
+songHappyBirthday :: Instrument -> Either ScoreError Sound
+songHappyBirthday i = gain 0.5 <$> playScoreMono defaultConfig {tempo = 99} [(defaultVoice {instrument = i}, scoreHappyBirthday)]
 
 scoreHappyBirthday :: (Score m) => m ()
 scoreHappyBirthday = do

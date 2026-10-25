@@ -1,10 +1,11 @@
 -- |
 -- Module      : Herald.Sound
--- Description : Sampled mono audio, its generators and mixers.
+-- Description : Sampled audio, its generators and mixers.
 --
 -- A 'Sound' is a mono signal sampled at 'sampleRate', stored as an unboxed
 -- vector. Samples are nominally in @[-1, 1]@; values outside that range are
--- clipped only when encoding (see "Herald.Sound.IO").
+-- clipped only when encoding (see "Herald.Sound.IO"). Mono sounds become
+-- t'Stereo' by panning them with 'panSound'.
 module Herald.Sound
   ( -- * Types
     Seconds,
@@ -29,6 +30,12 @@ module Herald.Sound
     gain,
     mixSound,
     balanceSound,
+
+    -- * Stereo
+    Pan,
+    Stereo (..),
+    panSound,
+    balanceStereo,
   )
 where
 
@@ -138,3 +145,26 @@ mixSound xs = foldl add (V.replicate len 0) xs
 -- sounds about as loud as a single input. Peaks may exceed the loudest input.
 balanceSound :: [Sound] -> Sound
 balanceSound xs = gain (1 / sqrt (fromIntegral (max 1 (length xs)))) (mixSound xs)
+
+-- | A position in the stereo field, from -1 (left) through 0 (centre) to 1
+-- (right).
+type Pan = Double
+
+-- | A signal with a left and a right channel.
+data Stereo = Stereo
+  { leftChannel :: Sound,
+    rightChannel :: Sound
+  }
+  deriving (Show, Eq)
+
+-- | Place a mono sound in the stereo field with a constant-power pan law, so
+-- it sounds equally loud anywhere: in the centre each channel gets about
+-- 0.707 of it.
+panSound :: Pan -> Sound -> Stereo
+panSound p s = Stereo (gain (cos theta) s) (gain (sin theta) s)
+  where
+    theta = (max (-1) (min 1 p) + 1) * pi / 4
+
+-- | 'balanceSound' for each channel of stereo sounds.
+balanceStereo :: [Stereo] -> Stereo
+balanceStereo xs = Stereo (balanceSound (map leftChannel xs)) (balanceSound (map rightChannel xs))

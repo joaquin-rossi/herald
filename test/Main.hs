@@ -19,6 +19,7 @@ main =
         scoreTests,
         tieTests,
         meterTests,
+        stereoTests,
         wavTests
       ]
 
@@ -56,8 +57,8 @@ tuningTests =
       testCase "quarter-comma meantone has a pure major third on C" $
         assertApprox "cents" (cents 5 4) (cents (tune meantone (-5)) (tune meantone (-9))),
       testCase "the score uses the configured tuning" $
-        playScore defaultConfig {tuning = equalTemperament 220} [tellNote quarter a5]
-          @?= render (tellNote quarter a4)
+        playScoreMono defaultConfig {tuning = equalTemperament 220} [(defaultVoice, tellNote quarter a5)]
+          @?= Right (render (tellNote quarter a4))
     ]
   where
     meantone = quarterCommaMeantone 440
@@ -112,8 +113,8 @@ scoreTests =
         V.length (render (tellNotes quarter [c4, d4])) @?= 48000,
       testCase "rests and notes share the timeline" $
         V.length (render (tellRest half >> tellNote eighth c4)) @?= 60000,
-      testCase "tempo changes apply from then on" $
-        V.length (render (tellNote quarter c4 >> setTempo 60 >> tellNote quarter c4)) @?= 72000,
+      testCase "the tempo comes from the configuration" $
+        V.length <$> playScoreMono defaultConfig {tempo = 60} [(defaultVoice, tellNote quarter c4)] @?= Right 48000,
       testCase "voices start in C major and setKey applies from then on" $
         render (tellNote quarter b4 >> setKey gMinor >> tellNote quarter b4)
           @?= render (tellNotes quarter [natural b4, bb4]),
@@ -127,11 +128,11 @@ scoreTests =
         render (tellTrill quarter 4 e4 (sharp f4) >> tellNote quarter f4)
           @?= render (tellTrill quarter 4 e4 fs4 >> tellNote quarter (natural f4)),
       testCase "voices are rendered independently" $
-        playScore defaultConfig [tellNote quarter (sharp f4), tellNote quarter f4]
-          @?= playScore defaultConfig [tellNote quarter fs4, tellNote quarter (natural f4)],
-      testCase "withInstrument applies only to its block" $
-        render (withInstrument organ (tellNote quarter c4) >> tellNote quarter c4)
-          @?= V.concat [renderNote organ (tune a440 (-9)) 0.5, renderNote additive (tune a440 (-9)) 0.5],
+        playScoreMono defaultConfig [(defaultVoice, tellNote quarter (sharp f4)), (defaultVoice, tellNote quarter f4)]
+          @?= playScoreMono defaultConfig [(defaultVoice, tellNote quarter fs4), (defaultVoice, tellNote quarter (natural f4))],
+      testCase "each voice plays its own instrument" $
+        playScoreMono defaultConfig [(defaultVoice {instrument = organ}, tellNote quarter c4), (defaultVoice, tellNote quarter c4)]
+          @?= Right (balanceSound [renderNote organ (tune a440 (-9)) 0.5, renderNote additive (tune a440 (-9)) 0.5]),
       testCase "dynamics scale notes from then on" $
         render (setDynamic forte >> tellNote quarter c4)
           @?= gain (dynamicGain forte) (render (tellNote quarter c4)),
@@ -188,27 +189,62 @@ meterTests =
           @?= Left (ScoreError 2 1 (WrongBarLength 1 2))
     ]
 
+stereoTests :: TestTree
+stereoTests =
+  testGroup
+    "Stereo"
+    [ testCase "the centre splits a sound at equal power" $ do
+        let Stereo l r = panSound 0 (V.fromList [1])
+        assertClose l (V.fromList [sqrt 0.5])
+        assertClose r (V.fromList [sqrt 0.5]),
+      testCase "hard left and right use a single channel" $ do
+        assertClose (rightChannel (panSound (-1) (V.fromList [1]))) (V.fromList [0])
+        assertClose (leftChannel (panSound 1 (V.fromList [1]))) (V.fromList [0]),
+      testCase "voices go to their side" $ do
+        let left = tellNote quarter c4
+            right = tellNote quarter e4
+        case playScoreStereo defaultConfig [(defaultVoice {pan = -1}, left), (defaultVoice {pan = 1}, right)] of
+          Left err -> assertFailure (displayScoreError err)
+          Right (Stereo l r) -> do
+            assertClose l (gain (1 / sqrt 2) (render left))
+            assertClose r (gain (1 / sqrt 2) (render right))
+    ]
+  where
+    assertClose x y = do
+      V.length x @?= V.length y
+      assertBool "channels differ" (V.and (V.zipWith (\a b -> abs (a - b) < 1e-12) x y))
+
 wavTests :: TestTree
 wavTests =
   testGroup
     "WAV"
     [ testCase "header and 16-bit samples" $ do
-        let wav = encodeWav (V.fromList [0, 1, -1])
+        let wav = encodeWav (mono [0, 1, -1])
         B.length wav @?= 44 + 6
         BC.take 4 wav @?= BC.pack "RIFF"
         BC.take 4 (B.drop 8 wav) @?= BC.pack "WAVE"
         B.unpack (B.drop 44 wav) @?= [0, 0, 0xff, 0x7f, 0x01, 0x80],
       testCase "out-of-range samples are clipped" $
-        B.drop 44 (encodeWav (V.fromList [2, -2])) @?= B.drop 44 (encodeWav (V.fromList [1, -1]))
+        B.drop 44 (encodeWav (mono [2, -2])) @?= B.drop 44 (encodeWav (mono [1, -1])),
+      testCase "stereo interleaves left and right" $ do
+        let wav = encodeWav (Stereo (V.fromList [1, 0]) (V.fromList [-1]))
+        B.length wav @?= 44 + 8
+        B.unpack (B.take 2 (B.drop 22 wav)) @?= [2, 0]
+        B.unpack (B.drop 44 wav) @?= [0xff, 0x7f, 0x01, 0x80, 0, 0, 0, 0]
     ]
 
--- | Render a single voice with the default configuration.
+-- | Render a single voice with the default configuration, which the tests
+-- expect to succeed.
 render :: ScoreT () -> Sound
-render v = playScore defaultConfig [v]
+render v = either (error . displayScoreError) id (playScoreMono defaultConfig [(defaultVoice, v)])
 
--- | Whether voices render, ignoring the sound.
+-- | Whether voices with the default configuration render.
 result :: [ScoreT ()] -> Either ScoreError ()
-result = fmap (const ()) . playScoreEither defaultConfig
+result vs = () <$ playScoreMono defaultConfig [(defaultVoice, v) | v <- vs]
 
 peak :: Sound -> Double
 peak = V.maximum . V.map abs
+
+-- | A mono sound from samples.
+mono :: [Double] -> Sound
+mono = V.fromList

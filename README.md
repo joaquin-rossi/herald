@@ -10,13 +10,13 @@ Original idea: https://www.youtube.com/watch?v=FYTZkE5BZ-0
 
 - **Scores as code**: each voice is a sequence of notes, rests and bar lines, read like a staff.
 - **Notation rules**: named pitches (`c4`, `fs4`, `bb4`, …), key signatures, and accidentals.
-- **Rhythm and tempo**: note values from whole to thirty-second notes, dotted notes, ties across bar lines, and tempo changes mid-score.
+- **Rhythm**: note values from whole to thirty-second notes, dotted notes and ties across bar lines.
 - **Checked bars**: with a time signature, every bar must add up to it; mistakes are reported with the voice and bar number.
 - **Expression**: dynamics from pianissimo to fortissimo, chords and trills.
 - **Tuning**: equal temperament at any reference pitch, or historical temperaments such as Werckmeister III and quarter-comma meantone.
-- **Several voices**, mixed at balanced levels.
+- **Several voices**, each with its own instrument and place in the stereo field, mixed at balanced levels.
 - **Instruments**: pure tones, additive synthesis, a pipe organ and a Karplus-Strong harpsichord, or your own as a function from frequency and duration to sound.
-- **Output**: 16-bit 48 kHz WAV files, or direct playback.
+- **Output**: 16-bit 48 kHz mono or stereo WAV files, or direct playback.
 
 ## Requirements
 
@@ -51,9 +51,15 @@ bass = do
 main :: IO ()
 main = do
   let config = defaultConfig {tempo = 100, tuning = werckmeisterIII 415}
-      song = playScore config [melody, withInstrument organ bass]
-  saveWav "song.wav" song
-  play song
+      voices =
+        [ (defaultVoice {pan = -0.3}, melody),
+          (defaultVoice {instrument = organ, pan = 0.3}, bass)
+        ]
+  case playScoreStereo config voices of
+    Left err -> putStrLn (displayScoreError err)
+    Right song -> do
+      saveWav "song.wav" song
+      play song
 ```
 
 ## Demo

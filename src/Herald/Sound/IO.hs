@@ -2,10 +2,11 @@
 -- Module      : Herald.Sound.IO
 -- Description : Encoding sounds as WAV files and playing them.
 --
--- Sounds are written as mono 16-bit PCM WAV at 'sampleRate'. Samples outside
--- @[-1, 1]@ are clipped.
+-- Mono 'Sound's and t'Stereo' sounds are written as 16-bit PCM WAV at
+-- 'sampleRate'. Samples outside @[-1, 1]@ are clipped.
 module Herald.Sound.IO
-  ( encodeWav,
+  ( Audio (..),
+    encodeWav,
     saveWav,
     play,
   )
@@ -24,13 +25,31 @@ import System.Exit
 import System.IO (hClose)
 import System.Process
 
--- | Encode as a mono 16-bit PCM WAV file.
-encodeWav :: Sound -> B.ByteString
-encodeWav sound = BB.toLazyByteString (header <> samples)
+-- | Audio that can be written out: its channels, in WAV order.
+class Audio a where
+  channels :: a -> [Sound]
+
+-- | One channel.
+instance Audio (V.Vector Double) where
+  channels s = [s]
+
+-- | Left, then right.
+instance Audio Stereo where
+  channels s = [leftChannel s, rightChannel s]
+
+-- | Encode as a 16-bit PCM WAV file with one channel per 'channels'.
+-- Channels shorter than the longest one are padded with silence.
+encodeWav :: (Audio a) => a -> B.ByteString
+encodeWav audio = BB.toLazyByteString (header <> samples)
   where
-    samples = V.foldr (\x b -> BB.int16LE (pcm x) <> b) mempty sound
+    chs = channels audio
+    n = length chs
+    frames = maximum (0 : map V.length chs)
+    sample s i = if i < V.length s then V.unsafeIndex s i else 0
+    samples = foldr (\i b -> foldr (\s b' -> BB.int16LE (pcm (sample s i)) <> b') b chs) mempty [0 .. frames - 1]
     rate = round sampleRate :: Word32
-    dataSize = fromIntegral (2 * V.length sound) :: Word32
+    blockAlign = fromIntegral (2 * n) :: Word16
+    dataSize = fromIntegral (2 * n * frames) :: Word32
     header =
       mconcat
         [ BB.string7 "RIFF",
@@ -39,33 +58,33 @@ encodeWav sound = BB.toLazyByteString (header <> samples)
           BB.string7 "fmt ",
           BB.word32LE 16, -- fmt chunk size
           BB.word16LE 1, -- PCM
-          BB.word16LE 1, -- mono
+          BB.word16LE (fromIntegral n), -- channels
           BB.word32LE rate,
-          BB.word32LE (rate * 2), -- byte rate
-          BB.word16LE 2, -- block align
+          BB.word32LE (rate * fromIntegral blockAlign), -- byte rate
+          BB.word16LE blockAlign,
           BB.word16LE 16, -- bits per sample
           BB.string7 "data",
           BB.word32LE dataSize
         ]
     pcm x = round (32767 * max (-1) (min 1 x)) :: Int16
 
--- | Write a sound to a WAV file.
-saveWav :: FilePath -> Sound -> IO ()
+-- | Write audio to a WAV file.
+saveWav :: (Audio a) => FilePath -> a -> IO ()
 saveWav filePath = B.writeFile filePath . encodeWav
 
--- | Play a sound through @ffplay@ (from FFmpeg), which must be on the @PATH@,
+-- | Play audio through @ffplay@ (from FFmpeg), which must be on the @PATH@,
 -- streaming the WAV over its standard input. Throws if @ffplay@ fails;
 -- quitting it early is not an error.
-play :: Sound -> IO ()
-play sound = do
+play :: (Audio a) => a -> IO ()
+play audio = do
   let args = ["-autoexit", "-showmode", "1", "-"]
   withCreateProcess (proc "ffplay" args) {std_in = CreatePipe} $ \stdin' _ _ ph -> do
     -- ffplay closes the pipe early if the user quits; that's not an error.
-    forM_ stdin' $ \h -> ignoreBrokenPipe $ B.hPut h (encodeWav sound) >> hClose h
+    forM_ stdin' $ \h -> ignoreBrokenPipe $ B.hPut h (encodeWav audio) >> hClose h
     code <- waitForProcess ph
     case code of
       ExitSuccess -> pure ()
-      ExitFailure n -> ioError . userError $ "ffplay exited with code " ++ show n
+      ExitFailure c -> ioError . userError $ "ffplay exited with code " ++ show c
   where
     ignoreBrokenPipe = handle $ \e ->
       unless (ioe_type e == ResourceVanished) (throwIO e)

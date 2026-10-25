@@ -11,7 +11,7 @@ import System.IO
 data Song = Song
   { defaultInstruments :: [String],
     -- | 'Nothing' unless given one instrument per default.
-    render :: [Instrument] -> Maybe Sound
+    render :: [Instrument] -> Maybe (Either ScoreError Sound)
   }
 
 songs :: [(String, Song)]
@@ -50,7 +50,10 @@ renderSong name insts = do
   let names = if null insts then defaultInstruments song else insts
   is <- mapM (\i -> find "instrument" i instruments) names
   case render song is of
-    Just sound -> pure sound
+    Just (Right sound) -> pure sound
+    Just (Left err) -> do
+      hPutStrLn stderr $ name ++ ": " ++ displayScoreError err
+      exitFailure
     Nothing -> do
       let n = length (defaultInstruments song)
       hPutStrLn stderr $ name ++ " takes 0 or " ++ show n ++ " instruments, got " ++ show (length insts)

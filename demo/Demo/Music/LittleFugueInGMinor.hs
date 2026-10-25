@@ -13,13 +13,13 @@ import Herald
 -- copyright notice is included.
 
 -- | The fugue with an instrument for each voice, upper voice first.
-songLittleFugueInGMinor :: Instrument -> Instrument -> Sound
+songLittleFugueInGMinor :: Instrument -> Instrument -> Either ScoreError Sound
 songLittleFugueInGMinor upper lower =
-  gain 0.5 $
-    playScore
+  gain 0.5
+    <$> playScoreMono
       defaultConfig {tempo = 144}
-      [ withInstrument upper scoreLittleFugueInGMinor1,
-        withInstrument lower scoreLittleFugueInGMinor2
+      [ (defaultVoice {instrument = upper}, scoreLittleFugueInGMinor1),
+        (defaultVoice {instrument = lower}, scoreLittleFugueInGMinor2)
       ]
 
 scoreLittleFugueInGMinor1 :: (Score m) => m ()

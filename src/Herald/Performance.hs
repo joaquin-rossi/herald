@@ -67,6 +67,7 @@ data ScoreError = ScoreError
   }
   deriving (Show, Eq)
 
+-- | A notation mistake in a voice.
 data ErrorReason
   = -- | Actual and expected beats.
     WrongBarLength Beats Beats
@@ -74,6 +75,7 @@ data ErrorReason
   | UnfinishedTie
   deriving (Show, Eq)
 
+-- | As in @voice 2, bar 49: the bar has 4.25 beats but the meter has 4.0@.
 displayScoreError :: ScoreError -> String
 displayScoreError (ScoreError v b reason) =
   "voice " ++ show v ++ ", bar " ++ show b ++ ": " ++ case reason of

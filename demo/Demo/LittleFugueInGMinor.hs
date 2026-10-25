@@ -1,4 +1,4 @@
-module Demo.Music.LittleFugueInGMinor
+module Demo.LittleFugueInGMinor
   ( songLittleFugueInGMinor,
   )
 where
@@ -12,15 +12,16 @@ import Herald
 -- distribute, modify, and/or perform this music in any form as long as this
 -- copyright notice is included.
 
--- | The fugue with an instrument for each voice, upper voice first.
-songLittleFugueInGMinor :: Instrument -> Instrument -> Either ScoreError Sound
+songLittleFugueInGMinor :: Instrument -> Instrument -> Either ScoreError Stereo
 songLittleFugueInGMinor upper lower =
-  gain 0.5
-    <$> playScoreMono
+  quieter
+    <$> playScoreStereo
       defaultConfig {tempo = 144}
-      [ (defaultVoice {instrument = upper}, scoreLittleFugueInGMinor1),
-        (defaultVoice {instrument = lower}, scoreLittleFugueInGMinor2)
+      [ (defaultVoice {instrument = upper, pan = -0.3}, scoreLittleFugueInGMinor1),
+        (defaultVoice {instrument = lower, pan = 0.3}, scoreLittleFugueInGMinor2)
       ]
+  where
+    quieter (Stereo l r) = Stereo (gain 0.5 l) (gain 0.5 r)
 
 scoreLittleFugueInGMinor1 :: (Score m) => m ()
 scoreLittleFugueInGMinor1 = do

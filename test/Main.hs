@@ -233,18 +233,14 @@ wavTests =
         B.unpack (B.drop 44 wav) @?= [0xff, 0x7f, 0x01, 0x80, 0, 0, 0, 0]
     ]
 
--- | Render a single voice with the default configuration, which the tests
--- expect to succeed.
-render :: ScoreT () -> Sound
+render :: Performance () -> Sound
 render v = either (error . displayScoreError) id (playScoreMono defaultConfig [(defaultVoice, v)])
 
--- | Whether voices with the default configuration render.
-result :: [ScoreT ()] -> Either ScoreError ()
+result :: [Performance ()] -> Either ScoreError ()
 result vs = () <$ playScoreMono defaultConfig [(defaultVoice, v) | v <- vs]
 
 peak :: Sound -> Double
 peak = V.maximum . V.map abs
 
--- | A mono sound from samples.
 mono :: [Double] -> Sound
 mono = V.fromList

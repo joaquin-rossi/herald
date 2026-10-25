@@ -84,8 +84,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      # haskell-actions/run-ormolu downloads from a repository that no longer
-      # hosts the releases, so fetch the pinned version directly.
+      # haskell-actions/run-ormolu downloads from a repo without the releases.
       - name: Install ormolu
         run: |
           curl -sSfL -o ormolu.zip https://github.com/tweag/ormolu/releases/download/0.9.0.0/ormolu-x86_64-linux.zip

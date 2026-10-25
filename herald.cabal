@@ -40,11 +40,12 @@ library
     hs-source-dirs:   src
     exposed-modules:
         Herald
-        Herald.Duration
-        Herald.Dynamic
-        Herald.Instrument
-        Herald.Pitch
+        Herald.Performance
+        Herald.Performance.Instrument
         Herald.Score
+        Herald.Score.Duration
+        Herald.Score.Dynamic
+        Herald.Score.Pitch
         Herald.Sound
         Herald.Sound.IO
         Herald.Tuning

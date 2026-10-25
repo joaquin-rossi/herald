@@ -24,9 +24,10 @@ executable herald-demo
     hs-source-dirs:   .
     main-is:          Main.hs
     other-modules:
-        Demo.Music.HappyBirthday
-        Demo.Music.LittleFugueInGMinor
+        Demo.HappyBirthday
+        Demo.LittleFugueInGMinor
 
     build-depends:
         base >=4.20 && <4.23,
+        containers >=0.7 && <0.9,
         herald,

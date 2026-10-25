@@ -1,50 +1,55 @@
 module Main (main) where
 
-import Demo.Music.HappyBirthday
-import Demo.Music.LittleFugueInGMinor
+import Data.Map.Strict (Map)
+import Data.Map.Strict qualified as Map
+import Demo.HappyBirthday
+import Demo.LittleFugueInGMinor
 import Herald
 import System.Environment
 import System.Exit
 import System.IO
 
--- | A song and the instruments it plays with when none are given.
 data Song = Song
   { defaultInstruments :: [String],
     -- | 'Nothing' unless given one instrument per default.
-    render :: [Instrument] -> Maybe (Either ScoreError Sound)
+    render :: [Instrument] -> Maybe (Either ScoreError AnyAudio)
   }
 
-songs :: [(String, Song)]
-songs =
-  [ ( "happy-birthday",
-      Song ["additive"] $ \case
-        [i] -> Just (songHappyBirthday i)
-        _ -> Nothing
-    ),
-    ( "little-fugue",
-      Song ["organ", "harpsichord"] $ \case
-        [upper, lower] -> Just (songLittleFugueInGMinor upper lower)
-        _ -> Nothing
-    )
-  ]
+data AnyAudio = forall a. (Audio a) => AnyAudio a
 
-instruments :: [(String, Instrument)]
+songs :: Map String Song
+songs =
+  Map.fromList
+    [ ( "happy-birthday",
+        Song ["harpsichord", "organ"] $ \case
+          [melody, chords] -> Just (AnyAudio <$> songHappyBirthday melody chords)
+          _ -> Nothing
+      ),
+      ( "little-fugue",
+        Song ["pure", "additive"] $ \case
+          [upper, lower] -> Just (AnyAudio <$> songLittleFugueInGMinor upper lower)
+          _ -> Nothing
+      )
+    ]
+
+instruments :: Map String Instrument
 instruments =
-  [ ("pure", pureTone),
-    ("additive", additive),
-    ("organ", organ),
-    ("harpsichord", harpsichord)
-  ]
+  Map.fromList
+    [ ("pure", pureTone),
+      ("additive", additive),
+      ("organ", organ),
+      ("harpsichord", harpsichord)
+    ]
 
 main :: IO ()
 main = do
   args <- getArgs
   case args of
-    "play" : name : insts -> play =<< renderSong name insts
-    "wav" : name : path : insts -> saveWav path =<< renderSong name insts
+    "play" : name : insts -> renderSong name insts >>= \(AnyAudio a) -> play a
+    "wav" : name : path : insts -> renderSong name insts >>= \(AnyAudio a) -> saveWav path a
     _ -> usage
 
-renderSong :: String -> [String] -> IO Sound
+renderSong :: String -> [String] -> IO AnyAudio
 renderSong name insts = do
   song <- find "song" name songs
   let names = if null insts then defaultInstruments song else insts
@@ -59,8 +64,8 @@ renderSong name insts = do
       hPutStrLn stderr $ name ++ " takes 0 or " ++ show n ++ " instruments, got " ++ show (length insts)
       usage
 
-find :: String -> String -> [(String, a)] -> IO a
-find kind name table = case lookup name table of
+find :: String -> String -> Map String a -> IO a
+find kind name table = case Map.lookup name table of
   Just x -> pure x
   Nothing -> do
     hPutStrLn stderr $ "unknown " ++ kind ++ ": " ++ name
@@ -76,7 +81,7 @@ usage = do
       "",
       "songs (default instruments):"
     ]
-      ++ ["  " ++ name ++ " (" ++ unwords (defaultInstruments song) ++ ")" | (name, song) <- songs]
+      ++ ["  " ++ name ++ " (" ++ unwords (defaultInstruments song) ++ ")" | (name, song) <- Map.toList songs]
       ++ ["", "instruments:"]
-      ++ (("  " ++) . fst <$> instruments)
+      ++ (("  " ++) <$> Map.keys instruments)
   exitFailure

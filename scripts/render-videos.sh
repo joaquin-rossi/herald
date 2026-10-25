@@ -1,21 +1,13 @@
 #!/usr/bin/env bash
-# Render the demo songs as MP4 videos for the README: a scrolling spectrogram
-# over a waveform, with the title on top. Each video stays under GitHub's
-# 10 MB limit for attachments.
-#
-# Usage: scripts/render-videos.sh [output-dir]   (default: $TMPDIR/herald-videos)
-#
-# Upload the videos by dragging them into the README editor on GitHub, then
-# replace the user-attachments URLs in README.md with the new ones.
-#
-# Requires cabal, ffmpeg and fontconfig. Set CABAL to use another cabal
-# binary, e.g. CABAL="mise exec -- cabal".
+# Renders the demo songs as MP4 videos under GitHub's 10 MB attachment limit,
+# to upload through the README editor.
+# Usage: scripts/render-videos.sh [output-dir]. Set CABAL to override cabal.
 
 set -euo pipefail
 
 out=${1:-${TMPDIR:-/tmp}/herald-videos}
 cabal=${CABAL:-cabal}
-max_bytes=$((9000 * 1024)) # x264 overshoots a little; stay well under 10 MB
+max_bytes=$((9000 * 1024)) # x264 overshoots the target bitrate a little
 audio_kbps=128
 
 songs=(
@@ -41,8 +33,6 @@ for entry in "${songs[@]}"; do
   "$demo" wav "$song" "$wav"
   seconds=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$wav")
 
-  # Video bitrate that fits the size limit next to the audio, capped so short
-  # songs don't get needlessly large files.
   video_kbps=$(awk -v s="$seconds" -v max="$max_bytes" -v a="$audio_kbps" \
     'BEGIN { k = int(max * 8 / 1000 / s - a); print (k > 2000 ? 2000 : k) }')
 

@@ -1,9 +1,4 @@
--- |
--- Module      : Herald.Sound.IO
--- Description : Encoding sounds as WAV files and playing them.
---
--- Mono 'Sound's and t'Stereo' sounds are written as 16-bit PCM WAV at
--- 'sampleRate'. Samples outside @[-1, 1]@ are clipped.
+-- | 16-bit PCM WAV output, and playback through @ffplay@.
 module Herald.Sound.IO
   ( Audio (..),
     encodeWav,
@@ -25,20 +20,16 @@ import System.Exit
 import System.IO (hClose)
 import System.Process
 
--- | Audio that can be written out: its channels, in WAV order.
 class Audio a where
   channels :: a -> [Sound]
 
--- | One channel.
 instance Audio (V.Vector Double) where
   channels s = [s]
 
--- | Left, then right.
 instance Audio Stereo where
   channels s = [leftChannel s, rightChannel s]
 
--- | Encode as a 16-bit PCM WAV file with one channel per 'channels'.
--- Channels shorter than the longest one are padded with silence.
+-- | Samples outside @[-1, 1]@ are clipped.
 encodeWav :: (Audio a) => a -> B.ByteString
 encodeWav audio = BB.toLazyByteString (header <> samples)
   where
@@ -68,13 +59,10 @@ encodeWav audio = BB.toLazyByteString (header <> samples)
         ]
     pcm x = round (32767 * max (-1) (min 1 x)) :: Int16
 
--- | Write audio to a WAV file.
 saveWav :: (Audio a) => FilePath -> a -> IO ()
 saveWav filePath = B.writeFile filePath . encodeWav
 
--- | Play audio through @ffplay@ (from FFmpeg), which must be on the @PATH@,
--- streaming the WAV over its standard input. Throws if @ffplay@ fails;
--- quitting it early is not an error.
+-- | Requires @ffplay@ on the @PATH@.
 play :: (Audio a) => a -> IO ()
 play audio = do
   let args = ["-autoexit", "-showmode", "1", "-"]

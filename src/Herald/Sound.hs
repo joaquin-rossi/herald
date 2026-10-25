@@ -54,6 +54,9 @@ sampleRate :: Double
 sampleRate = 48000.0
 
 -- | Number of samples in a duration, rounded to the nearest sample.
+--
+-- >>> sampleCount 0.5
+-- 24000
 sampleCount :: Seconds -> Int
 sampleCount t = round (sampleRate * t)
 

@@ -8,7 +8,19 @@ import Test.Tasty
 import Test.Tasty.HUnit
 
 main :: IO ()
-main = defaultMain $ testGroup "herald" [pitchTests, soundTests, instrumentTests, scoreTests, wavTests]
+main =
+  defaultMain $
+    testGroup
+      "herald"
+      [ pitchTests,
+        tuningTests,
+        soundTests,
+        instrumentTests,
+        scoreTests,
+        tieTests,
+        meterTests,
+        wavTests
+      ]
 
 pitchTests :: TestTree
 pitchTests =
@@ -26,10 +38,32 @@ pitchTests =
         pitchSemitones gMinor (natural b4) @?= pitchSemitones cMajor b4,
       testCase "key signatures add accidentals in order" $ do
         map (keyAccidental (sharps 2)) [F, C, G] @?= [Sharp, Sharp, Natural]
-        map (keyAccidental (flats 2)) [B, E, A] @?= [Flat, Flat, Natural],
-      testCase "A4 is 440 Hz" $ noteFreq 0 @?= 440,
-      testCase "an octave doubles the frequency" $ noteFreq 12 @?= 880
+        map (keyAccidental (flats 2)) [B, E, A] @?= [Flat, Flat, Natural]
     ]
+
+tuningTests :: TestTree
+tuningTests =
+  testGroup
+    "Tuning"
+    [ testCase "A4 is 440 Hz" $ tune a440 0 @?= 440,
+      testCase "an octave doubles the frequency" $ tune a440 12 @?= 880,
+      testCase "equal temperament takes a reference pitch" $ tune (equalTemperament 415) 0 @?= 415,
+      testCase "temperaments are anchored at A4" $ do
+        tune (werckmeisterIII 440) 0 @?= 440
+        tune (quarterCommaMeantone 440) 0 @?= 440,
+      testCase "Werckmeister III raises C4 by its offset from A" $
+        assertApprox "cents" 11.73 (cents (tune (werckmeisterIII 440) (-9)) (tune a440 (-9))),
+      testCase "quarter-comma meantone has a pure major third on C" $
+        assertApprox "cents" (cents 5 4) (cents (tune meantone (-5)) (tune meantone (-9))),
+      testCase "the score uses the configured tuning" $
+        playScore defaultConfig {tuning = equalTemperament 220} [tellNote quarter a5]
+          @?= render (tellNote quarter a4)
+    ]
+  where
+    meantone = quarterCommaMeantone 440
+    cents x y = 1200 * logBase 2 (x / y)
+    assertApprox msg expected actual =
+      assertBool (msg ++ ": expected " ++ show expected ++ ", got " ++ show actual) (abs (expected - actual) < 0.1)
 
 soundTests :: TestTree
 soundTests =
@@ -53,18 +87,18 @@ instrumentTests :: TestTree
 instrumentTests =
   testGroup "Instrument" . concat $
     [ [ testCase ("notes last exactly their duration: " ++ name) $
-          V.length (note i 0 0.3) @?= 14400
+          V.length (renderNote i 440 0.3) @?= 14400
       | (name, i) <- instruments
       ],
-      [ testCase ("notes peak at most 1: " ++ name ++ " at " ++ show n) $
-          assertBool "too loud" (peak (note i n 0.5) <= 1)
+      [ testCase ("notes peak at most 1: " ++ name ++ " at " ++ show f ++ " Hz") $
+          assertBool "too loud" (peak (renderNote i f 0.5) <= 1)
       | (name, i) <- instruments,
-        n <- [-24, 0, 24]
+        f <- [110, 440, 1760]
       ],
       [ testCase "a trill fills its duration" $
-          V.length (trill additive 6 0 2 0.75) @?= 36000,
+          V.length (trill additive 6 440 494 0.75) @?= 36000,
         testCase "a chord is as long as its notes" $
-          V.length (chord organ [0, 4, 7] 0.5) @?= 24000
+          V.length (chord organ [262, 330, 392] 0.5) @?= 24000
       ]
     ]
   where
@@ -97,10 +131,62 @@ scoreTests =
           @?= playScore defaultConfig [tellNote quarter fs4, tellNote quarter (natural f4)],
       testCase "withInstrument applies only to its block" $
         render (withInstrument organ (tellNote quarter c4) >> tellNote quarter c4)
-          @?= V.concat [note organ (-9) 0.5, note additive (-9) 0.5]
+          @?= V.concat [renderNote organ (tune a440 (-9)) 0.5, renderNote additive (tune a440 (-9)) 0.5],
+      testCase "dynamics scale notes from then on" $
+        render (setDynamic forte >> tellNote quarter c4)
+          @?= gain (dynamicGain forte) (render (tellNote quarter c4)),
+      testCase "dynamics go from soft to loud"
+        $ assertBool "out of order"
+        $ and (zipWith (<) dynamics (drop 1 dynamics))
     ]
   where
-    render v = playScore defaultConfig [v]
+    dynamics = [pianissimo, piano, mezzoPiano, mezzoForte, forte, fortissimo]
+
+tieTests :: TestTree
+tieTests =
+  testGroup
+    "Tie"
+    [ testCase "tied notes sound as one" $
+        render (tellTie quarter c4 >> tellNote quarter c4) @?= render (tellNote half c4),
+      testCase "ties can be chained" $
+        render (tellTie eighth c4 >> tellTie eighth c4 >> tellNote quarter c4)
+          @?= render (tellNote half c4),
+      testCase "a tied note keeps its accidental across the bar line" $
+        render (tellTie quarter (sharp f4) >> tellBar >> tellNote quarter f4)
+          @?= render (tellNote half fs4),
+      testCase "a tie into a different pitch is an error" $
+        result [tellTie quarter c4 >> tellNote quarter d4]
+          @?= Left (ScoreError 1 1 TieToDifferentPitch),
+      testCase "a tie followed by a rest is an error" $
+        result [tellTie quarter c4 >> tellBar >> tellRest quarter]
+          @?= Left (ScoreError 1 2 UnfinishedTie),
+      testCase "a voice can't end in a tie" $
+        result [tellTie quarter c4] @?= Left (ScoreError 1 1 UnfinishedTie)
+    ]
+
+meterTests :: TestTree
+meterTests =
+  testGroup
+    "Meter"
+    [ testCase "a bar lasts its time signature in beats" $ do
+        meterBeats (Meter 4 4) @?= 4
+        meterBeats (Meter 6 8) @?= 3,
+      testCase "bars that add up are accepted" $
+        result [setMeter (Meter 3 4) >> tellNotes quarter [c4, d4, e4] >> tellBar >> tellNote (dotted half) c4]
+          @?= Right (),
+      testCase "a short bar is an error" $
+        result [setMeter (Meter 4 4) >> tellNotes quarter [c4, d4, e4] >> tellBar]
+          @?= Left (ScoreError 1 1 (WrongBarLength 3 4)),
+      testCase "the last bar is checked too" $
+        result [setMeter (Meter 2 4) >> tellNotes quarter [c4, d4] >> tellBar >> tellNote quarter c4]
+          @?= Left (ScoreError 1 2 (WrongBarLength 1 2)),
+      testCase "a tie counts in each bar it crosses" $
+        result [setMeter (Meter 2 4) >> tellNote quarter c4 >> tellTie quarter d4 >> tellBar >> tellNotes quarter [d4, e4]]
+          @?= Right (),
+      testCase "errors name the voice" $
+        result [tellNote quarter c4, setMeter (Meter 2 4) >> tellNote quarter c4]
+          @?= Left (ScoreError 2 1 (WrongBarLength 1 2))
+    ]
 
 wavTests :: TestTree
 wavTests =
@@ -115,6 +201,14 @@ wavTests =
       testCase "out-of-range samples are clipped" $
         B.drop 44 (encodeWav (V.fromList [2, -2])) @?= B.drop 44 (encodeWav (V.fromList [1, -1]))
     ]
+
+-- | Render a single voice with the default configuration.
+render :: ScoreT () -> Sound
+render v = playScore defaultConfig [v]
+
+-- | Whether voices render, ignoring the sound.
+result :: [ScoreT ()] -> Either ScoreError ()
+result = fmap (const ()) . playScoreEither defaultConfig
 
 peak :: Sound -> Double
 peak = V.maximum . V.map abs

@@ -1,6 +1,6 @@
 -- |
 -- Module      : Herald.Pitch
--- Description : Written pitches, key signatures and tuning.
+-- Description : Written pitches and key signatures.
 --
 -- Pitches are written as in sheet music: a letter, an octave in scientific
 -- pitch notation (middle C is 'c4', concert A is 'a4') and an optional
@@ -33,9 +33,8 @@ module Herald.Pitch
     cMajor,
     gMinor,
 
-    -- * Tuning
+    -- * Semitones
     pitchSemitones,
-    noteFreq,
 
     -- * Pitch names
     -- $names
@@ -234,7 +233,6 @@ where
 import Data.Map.Strict (Map)
 import Data.Map.Strict qualified as Map
 import Data.Maybe
-import Herald.Sound (Hz)
 
 -- | A distance in semitones, relative to A4 when used as an absolute pitch.
 type Semitones = Int
@@ -296,6 +294,11 @@ gMinor :: Key
 gMinor = flats 2
 
 -- | Semitones relative to A4, taking unwritten accidentals from the key.
+--
+-- >>> pitchSemitones cMajor c4
+-- -9
+-- >>> pitchSemitones gMinor b4
+-- 1
 pitchSemitones :: Key -> Pitch -> Semitones
 pitchSemitones key (Pitch l o acc) = base l + offset (fromMaybe (keyAccidental key l) acc) + 12 * (o - 4) - 9
   where
@@ -309,11 +312,6 @@ pitchSemitones key (Pitch l o acc) = base l + offset (fromMaybe (keyAccidental k
     offset Flat = -1
     offset Natural = 0
     offset Sharp = 1
-
--- | Equal-tempered frequency of a pitch given in semitones relative to A4,
--- with A4 at 440 Hz.
-noteFreq :: Semitones -> Hz
-noteFreq n = 440.0 * 2 ** (fromIntegral n / 12)
 
 -- $names
 --

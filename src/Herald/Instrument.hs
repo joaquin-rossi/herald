@@ -14,15 +14,13 @@ module Herald.Instrument
     harpsichord,
     partials,
 
-    -- * Playing notes
-    note,
+    -- * Playing several notes
     chord,
     trill,
   )
 where
 
 import Data.Vector.Unboxed qualified as V
-import Herald.Pitch (Semitones, noteFreq)
 import Herald.Sound
 
 -- | How a single note sounds, given its frequency and duration.
@@ -72,17 +70,13 @@ harpsichord = Instrument $ \f t ->
       fade = fromIntegral (sampleCount 0.005)
    in V.imap (\i x -> min 1 (fromIntegral (len - 1 - i) / fade) * x) (pluck 0.996 f t)
 
--- | A note of the given pitch, in semitones relative to A4, and duration.
-note :: Instrument -> Semitones -> Seconds -> Sound
-note i n = renderNote i (noteFreq n)
-
 -- | Several notes sounding together, mixed with 'balanceSound'.
-chord :: Instrument -> [Semitones] -> Seconds -> Sound
-chord i ns t = balanceSound [note i n t | n <- ns]
+chord :: Instrument -> [Hz] -> Seconds -> Sound
+chord i fs t = balanceSound [renderNote i f t | f <- fs]
 
--- | A trill: @k@ equal notes alternating between two pitches, starting with
--- the first, filling the given duration.
-trill :: Instrument -> Int -> Semitones -> Semitones -> Seconds -> Sound
-trill i k n m t = V.concat [note i x (t / fromIntegral k') | x <- take k' (cycle [n, m])]
+-- | A trill: @k@ equal notes alternating between two frequencies, starting
+-- with the first, filling the given duration.
+trill :: Instrument -> Int -> Hz -> Hz -> Seconds -> Sound
+trill i k f g t = V.concat [renderNote i x (t / fromIntegral k') | x <- take k' (cycle [f, g])]
   where
     k' = max 1 k

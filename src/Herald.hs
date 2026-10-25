@@ -6,9 +6,12 @@
 -- This module re-exports everything; import the individual modules for a
 -- smaller namespace:
 --
--- * "Herald.Score": voices, notes, bars, tempo and key changes.
+-- * "Herald.Score": voices, notes, ties, bars, and tempo, key, meter and
+--   dynamic changes.
 -- * "Herald.Pitch": written pitches, key signatures and pitch names.
--- * "Herald.Duration": note values in beats.
+-- * "Herald.Duration": note values and time signatures.
+-- * "Herald.Dynamic": dynamics from pianissimo to fortissimo.
+-- * "Herald.Tuning": equal temperament and historical temperaments.
 -- * "Herald.Instrument": pure tone, additive, organ and harpsichord instruments.
 -- * "Herald.Sound": sampled audio, generators and mixing.
 -- * "Herald.Sound.IO": WAV output and playback.
@@ -30,17 +33,21 @@
 -- @
 module Herald
   ( module Herald.Duration,
+    module Herald.Dynamic,
     module Herald.Instrument,
     module Herald.Pitch,
     module Herald.Score,
     module Herald.Sound,
     module Herald.Sound.IO,
+    module Herald.Tuning,
   )
 where
 
 import Herald.Duration
+import Herald.Dynamic
 import Herald.Instrument
 import Herald.Pitch
 import Herald.Score
 import Herald.Sound
 import Herald.Sound.IO
+import Herald.Tuning

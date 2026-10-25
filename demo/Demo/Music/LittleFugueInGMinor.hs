@@ -25,6 +25,7 @@ songLittleFugueInGMinor upper lower =
 scoreLittleFugueInGMinor1 :: (Score m) => m ()
 scoreLittleFugueInGMinor1 = do
   setKey gMinor
+  setMeter (Meter 4 4)
   -- bar 1
   tellNotes quarter [g4, d5]
   tellNote (dotted quarter) b4
@@ -316,6 +317,7 @@ scoreLittleFugueInGMinor1 = do
 scoreLittleFugueInGMinor2 :: (Score m) => m ()
 scoreLittleFugueInGMinor2 = do
   setKey gMinor
+  setMeter (Meter 4 4)
   -- bar 1
   tellRest whole
   -- bar 2
@@ -528,14 +530,17 @@ scoreLittleFugueInGMinor2 = do
   tellBar
   tellNotes eighth [e5, e4, ab4, g4]
   tellNote quarter f4
-  tellNote (quarter + sixteenth) g4 -- tied into bar 49
+  tellTie quarter g4
   -- bar 49
   tellBar
+  tellNote sixteenth g4
   tellNotes sixteenth [g4, a4, natural b4, c5, d5, e5, c5]
   tellNotes eighth [ab4, c5, ab5]
-  tellNote (quarter + eighth + sixteenth) f5 -- tied into bar 50
+  tellTie eighth f5
   -- bar 50
   tellBar
+  tellTie quarter f5
+  tellNote sixteenth f5
   tellNotes sixteenth [f5, e5, d5, e5, d5, c5, e5, d5, c5, natural b4, d5]
   -- bar 51
   tellBar

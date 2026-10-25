@@ -1,6 +1,6 @@
 -- |
 -- Module      : Herald.Duration
--- Description : Note durations measured in beats.
+-- Description : Note durations and time signatures, measured in beats.
 --
 -- Durations are measured in beats, where a beat is a quarter note. How long
 -- a beat lasts in seconds depends on the tempo of the score.
@@ -17,6 +17,10 @@ module Herald.Duration
     sixteenth,
     thirtySecond,
     dotted,
+
+    -- * Time signatures
+    Meter (..),
+    meterBeats,
   )
 where
 
@@ -50,7 +54,21 @@ sixteenth = 1 / 4
 thirtySecond :: Beats
 thirtySecond = 1 / 8
 
--- | A dotted note lasts one and a half times as long:
--- @dotted quarter == 1.5@.
+-- | A dotted note lasts one and a half times as long.
+--
+-- >>> dotted quarter
+-- 1.5
 dotted :: Beats -> Beats
 dotted = (* 1.5)
+
+-- | A time signature: beats per bar over the note value of a beat, as in
+-- @Meter 3 4@ for three-four time or @Meter 6 8@ for six-eight.
+data Meter = Meter Int Int
+  deriving (Show, Eq)
+
+-- | Length of a bar in beats, where a quarter note is one beat.
+--
+-- >>> meterBeats (Meter 6 8)
+-- 3.0
+meterBeats :: Meter -> Beats
+meterBeats (Meter n d) = fromIntegral n * 4 / fromIntegral d

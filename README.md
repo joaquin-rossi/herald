@@ -10,8 +10,11 @@ Original idea: https://www.youtube.com/watch?v=FYTZkE5BZ-0
 
 - **Scores as code**: each voice is a sequence of notes, rests and bar lines, read like a staff.
 - **Notation rules**: named pitches (`c4`, `fs4`, `bb4`, …), key signatures, and accidentals.
-- **Rhythm and tempo**: note values from whole to thirty-second notes, dotted notes, and tempo changes mid-score.
-- **Several voices**, mixed at balanced levels, plus chords and trills.
+- **Rhythm and tempo**: note values from whole to thirty-second notes, dotted notes, ties across bar lines, and tempo changes mid-score.
+- **Checked bars**: with a time signature, every bar must add up to it; mistakes are reported with the voice and bar number.
+- **Expression**: dynamics from pianissimo to fortissimo, chords and trills.
+- **Tuning**: equal temperament at any reference pitch, or historical temperaments such as Werckmeister III and quarter-comma meantone.
+- **Several voices**, mixed at balanced levels.
 - **Instruments**: pure tones, additive synthesis, a pipe organ and a Karplus-Strong harpsichord, or your own as a function from frequency and duration to sound.
 - **Output**: 16-bit 48 kHz WAV files, or direct playback.
 
@@ -28,22 +31,27 @@ import Herald
 melody :: Score m => m ()
 melody = do
   setKey gMinor
+  setMeter (Meter 4 4)
   tellNotes quarter [g4, b4, a4, g4] -- b4 is B flat in G minor
   tellBar
+  setDynamic forte
   tellNote half (sharp f4)
   tellNote half g4
 
 bass :: Score m => m ()
 bass = do
   setKey gMinor
-  tellNote whole g3
+  setMeter (Meter 4 4)
+  tellTie half g3
+  tellNote half g3
   tellBar
   tellNote half d3
   tellNote half g3
 
 main :: IO ()
 main = do
-  let song = playScore defaultConfig {tempo = 100} [melody, withInstrument organ bass]
+  let config = defaultConfig {tempo = 100, tuning = werckmeisterIII 415}
+      song = playScore config [melody, withInstrument organ bass]
   saveWav "song.wav" song
   play song
 ```

@@ -10,6 +10,7 @@ songHappyBirthday i = gain 0.5 $ playScore defaultConfig {tempo = 99, instrument
 
 scoreHappyBirthday :: (Score m) => m ()
 scoreHappyBirthday = do
+  setMeter (Meter 3 4)
   tellRest 2
   tellNotes 0.5 [g4, g4]
   tellBar

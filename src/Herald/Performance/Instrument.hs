@@ -14,6 +14,7 @@ where
 import Data.Vector.Unboxed qualified as V
 import Herald.Sound
 
+-- | Renders a note of a frequency and duration.
 newtype Instrument = Instrument {renderNote :: Hz -> Seconds -> Sound}
 
 -- | Sine partials as frequency and relative amplitude, with short attack and
@@ -27,12 +28,15 @@ partials ws t = mixSound [gain (a / total) (envelope (sine f t)) | (f, a) <- ws'
     ramp i = min 1.0 (fromIntegral i * 0.001)
     envelope = V.imap (\i x -> ramp i * ramp (len - 1 - i) * x)
 
+-- | A single sine wave.
 pureTone :: Instrument
 pureTone = Instrument $ \f -> partials [(f, 1)]
 
+-- | Five slightly inharmonic partials.
 additive :: Instrument
 additive = Instrument $ \f -> partials (take 5 $ zip (inharmonics 0.001 f) (iterate (* 0.5) 1.0))
 
+-- | Pipe organ stops.
 organ :: Instrument
 organ = Instrument $ \f -> partials [(f * r, a) | (r, a) <- stops]
   where
@@ -52,6 +56,7 @@ harpsichord = Instrument $ \f t ->
       fade = fromIntegral (sampleCount 0.005)
    in V.imap (\i x -> min 1 (fromIntegral (len - 1 - i) / fade) * x) (pluck 0.996 f t)
 
+-- | Notes sounding together.
 chord :: Instrument -> [Hz] -> Seconds -> Sound
 chord i fs t = balanceSound [renderNote i f t | f <- fs]
 

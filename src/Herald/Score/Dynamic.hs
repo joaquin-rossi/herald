@@ -10,9 +10,11 @@ module Herald.Score.Dynamic
   )
 where
 
+-- | A loudness.
 newtype Dynamic = Dynamic {dynamicGain :: Double}
   deriving (Show, Eq, Ord)
 
+-- | From /pp/ to /ff/.
 pianissimo, piano, mezzoPiano, mezzoForte, forte, fortissimo :: Dynamic
 pianissimo = Dynamic 0.35
 piano = Dynamic 0.5

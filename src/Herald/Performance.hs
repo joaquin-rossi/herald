@@ -39,6 +39,7 @@ data ScoreConfig = ScoreConfig
     tuning :: Tuning
   }
 
+-- | 120 bpm in equal temperament at 440 Hz.
 defaultConfig :: ScoreConfig
 defaultConfig =
   ScoreConfig
@@ -46,12 +47,14 @@ defaultConfig =
       tuning = a440
     }
 
+-- | How a voice is performed.
 data VoiceConfig = VoiceConfig
   { instrument :: Instrument,
     -- | Ignored by 'playScoreMono'.
     pan :: Pan
   }
 
+-- | The additive instrument, centred.
 defaultVoice :: VoiceConfig
 defaultVoice =
   VoiceConfig
@@ -124,9 +127,11 @@ data Tie = Tie
 newtype Track = Track [Sound]
   deriving newtype (Semigroup, Monoid)
 
+-- | Perform the voices in mono.
 playScoreMono :: ScoreConfig -> [(VoiceConfig, Performance ())] -> Either ScoreError Sound
 playScoreMono config voices = balanceSound . map snd <$> performVoices config voices
 
+-- | Perform the voices in stereo.
 playScoreStereo :: ScoreConfig -> [(VoiceConfig, Performance ())] -> Either ScoreError Stereo
 playScoreStereo config voices =
   balanceStereo . map (\(v, s) -> panSound (pan v) s) <$> performVoices config voices

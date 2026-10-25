@@ -20,6 +20,7 @@ import System.Exit
 import System.IO (hClose)
 import System.Process
 
+-- | Mono or stereo audio.
 class Audio a where
   channels :: a -> [Sound]
 
@@ -59,6 +60,7 @@ encodeWav audio = BB.toLazyByteString (header <> samples)
         ]
     pcm x = round (32767 * max (-1) (min 1 x)) :: Int16
 
+-- | Write a WAV file.
 saveWav :: (Audio a) => FilePath -> a -> IO ()
 saveWav filePath = B.writeFile filePath . encodeWav
 

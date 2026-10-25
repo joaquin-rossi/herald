@@ -26,23 +26,31 @@ import Data.Vector.Unboxed (Vector)
 import Data.Vector.Unboxed qualified as V
 import Data.Vector.Unboxed.Mutable qualified as MV
 
+-- | A duration in seconds.
 type Seconds = Double
 
+-- | A frequency in hertz.
 type Hz = Double
 
+-- | An audio sample.
 type Sample = Double
 
+-- | A mono signal.
 type Sound = Vector Sample
 
+-- | Samples per second.
 sampleRate :: Double
 sampleRate = 48000.0
 
+-- | Samples in a duration.
 sampleCount :: Seconds -> Int
 sampleCount t = round (sampleRate * t)
 
+-- | Silence.
 silence :: Seconds -> Sound
 silence t = V.replicate (sampleCount t) 0
 
+-- | A sine wave.
 sine :: Hz -> Seconds -> Sound
 sine f t = V.generate (sampleCount t) (\i -> sin (fromIntegral i * step))
   where
@@ -86,6 +94,7 @@ pluck decay f t = V.create $ do
     peak = maximum [abs (x - mean) | x <- burst]
     excitation = [(x - mean) / peak | x <- burst]
 
+-- | Integer multiples of a frequency.
 harmonics :: Hz -> [Hz]
 harmonics f = (* f) <$> [1 ..]
 
@@ -95,6 +104,7 @@ inharmonics b f = zipWith stretch [1 ..] (harmonics f)
   where
     stretch n h = h * sqrt (1 + b * n ** 2)
 
+-- | Scale every sample.
 gain :: Double -> Sound -> Sound
 gain g = V.map (* g)
 
@@ -113,6 +123,7 @@ balanceSound xs = gain (1 / sqrt (fromIntegral (max 1 (length xs)))) (mixSound x
 -- | From -1 (left) to 1 (right).
 type Pan = Double
 
+-- | A left and a right channel.
 data Stereo = Stereo
   { leftChannel :: Sound,
     rightChannel :: Sound
@@ -125,5 +136,6 @@ panSound p s = Stereo (gain (cos theta) s) (gain (sin theta) s)
   where
     theta = (max (-1) (min 1 p) + 1) * pi / 4
 
+-- | 'balanceSound' for each channel.
 balanceStereo :: [Stereo] -> Stereo
 balanceStereo xs = Stereo (balanceSound (map leftChannel xs)) (balanceSound (map rightChannel xs))

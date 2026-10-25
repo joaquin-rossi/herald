@@ -39,5 +39,6 @@ class (Monad m) => Score m where
 
   setDynamic :: Dynamic -> m ()
 
+-- | Notes of the same length.
 tellNotes :: (Score m) => Beats -> [Pitch] -> m ()
 tellNotes b = mapM_ (tellNote b)

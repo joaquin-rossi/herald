@@ -45,6 +45,39 @@ jobs:
       - name: Package check
         run: cabal check
 
+  doctest:
+    name: Doctest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: haskell-actions/setup@v2
+        id: setup
+        with:
+          ghc-version: "9.10"
+          cabal-version: latest
+
+      - name: Resolve dependencies
+        run: |
+          cabal update
+          cabal build herald --dry-run
+
+      - uses: actions/cache@v6
+        with:
+          path: ${{ steps.setup.outputs.cabal-store }}
+          key: ${{ runner.os }}-doctest-ghc-${{ steps.setup.outputs.ghc-version }}-${{ hashFiles('dist-newstyle/cache/plan.json') }}
+          restore-keys: ${{ runner.os }}-doctest-ghc-${{ steps.setup.outputs.ghc-version }}-
+
+      - name: Install doctest
+        run: |
+          cabal install doctest --ignore-project --overwrite-policy=always --installdir="$HOME/.local/bin"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Run doctest
+        run: |
+          cabal build herald
+          cabal repl herald --with-compiler=doctest --repl-options='-w -Wdefault'
+
   ormolu:
     name: Formatting
     runs-on: ubuntu-latest

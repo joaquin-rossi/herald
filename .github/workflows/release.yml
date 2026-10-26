@@ -1,0 +1,44 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  hackage:
+    name: Upload Hackage candidate
+    runs-on: ubuntu-latest
+    env:
+      HACKAGE_TOKEN: ${{ secrets.HACKAGE_TOKEN }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: haskell-actions/setup@v2
+        with:
+          ghc-version: "9.14"
+          cabal-version: latest
+
+      - name: Check the tag matches the version
+        run: |
+          version=$(awk '/^version:/ {print $2}' herald.cabal)
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "tag $GITHUB_REF_NAME does not match version $version"
+            exit 1
+          fi
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+
+      - name: Test
+        run: |
+          cabal update
+          cabal check
+          cabal test herald --test-show-details=direct
+
+      - name: Upload package
+        run: |
+          cabal sdist . -o dist
+          cabal upload --token="$HACKAGE_TOKEN" "dist/herald-$VERSION.tar.gz"
+
+      - name: Upload documentation
+        run: |
+          cabal haddock . --haddock-for-hackage
+          cabal upload --documentation --token="$HACKAGE_TOKEN" "dist-newstyle/herald-$VERSION-docs.tar.gz"

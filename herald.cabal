@@ -1,6 +1,6 @@
 cabal-version:      3.0
 name:               herald
-version:            0.1.0.0
+version:            0.1.0.1
 synopsis:           Write sheet music as Haskell code and synthesize it
 description:
     Herald synthesizes music from scores written as Haskell code, with named

@@ -2,6 +2,8 @@
 
 [![CI](https://github.com/joaquin-rossi/herald/actions/workflows/ci.yml/badge.svg)](https://github.com/joaquin-rossi/herald/actions/workflows/ci.yml)
 
+[![Hackage](https://img.shields.io/hackage/v/herald.svg)](https://hackage.haskell.org/package/herald)
+
 Haskell library for writing musical scores as code and synthesizing them into audio.
 
 Original idea: https://www.youtube.com/watch?v=FYTZkE5BZ-0

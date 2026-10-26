@@ -1,14 +1,22 @@
 cabal-version:      3.0
 name:               herald
-version:            0.1.0.1
-synopsis:           Write sheet music as Haskell code and synthesize it
+version:            0.1.0.2
+synopsis:           Sheet music in Haskell
 description:
-    Herald synthesizes music from scores written as Haskell code, with named
-    pitches, key signatures, checked bars, ties, dynamics and several voices.
-    Voices are performed by simple instruments (pure tones, additive, organ
-    and a Karplus-Strong harpsichord) in equal temperament or historical
-    tunings, and rendered to mono or stereo WAV or played through ffplay.
-    Start with the "Herald" module, which re-exports the whole library.
+    Haskell library for writing musical scores as code and synthesizing them
+    into audio.
+
+    Features:
+
+    * Named pitches, key signatures and accidentals that last until the bar line
+    * Note values, dots, ties, chords and trills
+    * Time signatures, with every bar checked
+    * Dynamics
+    * Equal temperament and historical tunings
+    * Several voices, each with its own instrument and stereo position
+    * Mono or stereo WAV output and playback
+
+    Instruments: @pureTone@, @additive@, @organ@, @harpsichord@.
 homepage:           https://github.com/joaquin-rossi/herald
 bug-reports:        https://github.com/joaquin-rossi/herald/issues
 license:            AGPL-3.0-or-later

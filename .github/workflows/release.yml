@@ -31,7 +31,7 @@ jobs:
         run: |
           cabal update
           cabal check
-          cabal test herald --test-show-details=direct
+          cabal test herald-test --test-show-details=direct
 
       - name: Upload package
         run: |
